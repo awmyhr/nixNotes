@@ -1,0 +1,66 @@
+#### SMH == "System Management Homepage"
+#### https://<hostname>:2301 -or- https://<hostname>:2381
+
+#######################################
+# cpqacuxe-9.0-24.0
+Summary    : HP Array Configuration Utility
+
+# may need to be started manually via:
+cpqacuxe -R
+
+# to stop:
+cpqacuxe -stop
+
+# accessed via SMH; can not run hpacucli at same time.
+
+# end cpqacuxe
+#######################################
+#######################################
+# fibreutils-3.2-4
+Summary    : Provides complimentary programs and scripts for HP supported fibre
+           : channel HBAs
+           
+/usr/bin/hp_rescan
+     # Sends the rescan signal to all or selected Fibre Channel HBAs/CNAs.
+/usr/bin/lssd
+     # Prints all bound /dev/sd* devices
+/usr/bin/lssg
+     # Prints all bound /dev/sg* devices
+/usr/bin/scsi_info
+     # detailed info on a device, use /dev/sd* style path     
+# end fibreutils
+#######################################
+#######################################
+# hpacucli-9.0-24.0
+Summary    : HP Command Line Array Configuration Utility
+NOTE:     Can not run this & cpqacuxe at same time
+
+/usr/sbin/hpacucli
+/usr/sbin/hpacuscripting
+
+# end hpacucli
+#######################################
+#######################################
+# hpdiags-9.0.0-36
+Summary    : hp Insight Diagnostics
+
+# this is accessed via SMH
+
+# end hpdiags
+#######################################
+#######################################
+# hp-fc-enablement-1.2-7
+Summary    : Enablement utilities for HP Storage Fibre Channel Storage Arrays
+
+# appears to be driver/library - no commands/etc
+
+# end hp-fc-enablement
+#######################################
+#######################################
+# 
+
+# end 
+#######################################
+
+
+

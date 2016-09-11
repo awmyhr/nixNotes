@@ -1,0 +1,10 @@
+
+After initial install of MySQL
+
+    service mysql start
+    /usr/bin/mysql_secure_installation
+        (Set MySQL root password like: D@t4B0ss!)
+    mysqladmin -u root -p create <tablename>
+        (creates a table)
+    mysql -u root -p
+

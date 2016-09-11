@@ -1,0 +1,35 @@
+#!/bin/bash NOT A REAL SHELL SCRIPT!
+# This is a cut'n'paste scriptlet
+# be sure to read & understand what you're cutting & pasting!
+#
+# ISO date stamp
+`date +%Y%m%d-%H%M`
+################################################################################
+# list running containers
+docker ps
+# list all containers
+docer ps -a
+
+# stop and remove a single container:
+docker stop <containerID> && docker rm <containerID>
+# Stop and remove ALL containers:
+docker stop $(docker ps -a -q) && docker rm $(docker ps -a -q)
+################################################################################
+# remove a image
+docker rmi <imageID>
+
+################################################################################
+# run arbitrary command in a new container (interactive session)
+docker run -it [--name <name>] <imageID> <command>
+# run a container and remove it when done:
+docker run --rm [-it] <imageID> [<command>]
+
+# build an image (be in directory with Dockerfile)
+docker build -t <ImageName> .
+
+
+################################################################################
+# start container w/X11 redirect (haven't gotten this to work yet)
+docker run -it -v /tmp/.X11-unix:/tmp/.X11-unix -e DISPLAY=unix$DISPLAY --name cathode jess/1995
+################################################################################
+#

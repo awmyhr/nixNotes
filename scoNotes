@@ -1,0 +1,533 @@
+#!/bin/bash NOT A REAL SHELL SCRIPT!
+# This is a cut'n'paste scriptlet
+# be sure to read & understand what you're cutting & pasting!
+#
+# Found this on the web somewhere, can't remember where...
+# ISO date stamp
+`date +%Y%m%d-%H%M`
+
+
+hwconfig -h     Displays the hardware configuration
+swconfig        Displays the system contents database
+
+hw            (5.0.4 and above) Display detailed hardware config.
+                Reports available:
+                    cpu, cpu_id, cpu_type
+                        CPU model and speed
+                    ram, mem, memory
+                        System memory statistics
+                    rom, bios
+                        System ROM statistics
+                    mp, gpi
+                        Multiprocessor information
+                    con, console, screen, keyboard, kbd, sound, audio, video, vid, graphics, graf, grafinfo
+                        Console configuration
+                    bus, all_bus, all_buss
+                        Info on all CPU busses found
+                    eisa, eisa_bus, eisa_buss
+                        Info on EISA bus devices
+                    isa, isa_bus, isa_buss, pnp, isa_pnp
+                        Info on ISA Plug-and-Play devices
+                    pci, pci_bus, pci_buss
+                        Info on PCI bus devices
+                    pcmcia, pcmcia_bus, pcmcia_buss
+                        Info on PCMCIA bus devices
+                    cfg, config
+                        Configuration information
+
+
+fixmog -i    Checks all system files against file control database
+
+isverify -I    Rebuild ISAM database after system restore, need when
+        the following message is displayed :-
+        Error: Incorrect SCO Runtime System installed@
+
+/etc/conf/cf.d/configure    Tune kernel parameters
+/etc/conf/cf.d/link_unix    Relinks the kernel
+
+asktime        Used to set the time and date.
+
+/usr/adm/ISL/iqm_file    Contains serial number and activation key.
+
+od (filename)        Octal dump of a file
+hd (filename)        Hexadecimal dump of a file
+
+custom     # Menu for installing software
+scoadmin   # Administration menu (OSR5)
+sysadmsh   # Administration menu (3.2.4.2)
+
+scologin disable    #Disables graphical SCO login at startup (X)
+scologin enables    #Enables graphical SCO login at startup (X)
+
+################################################################################
+                TERMINALS
+################################################################################
+
+ttylock (tty)        Locks a named terminal
+ttyunlock (tty)        Unlocks a locked terminal
+
+enable (tty)        Turns on terminals
+disable (tty)        Turns off terminals
+
+To setup a serial console, add SYSTTY=x into /etc/default/boot.
+(Where x is 0 is display adapter and 1 is comm 1 etc)
+
+################################################################################
+                NETWORK
+################################################################################
+
+hostname        Displays hostname
+hostname (hostname)    Sets the hostname until next reboot
+
+tcp start    Starts TCP services
+tcp stop    Stops TCP services
+
+nfs start    Starts NFS services
+nfs stop    Stops NFS services
+
+netconfig    Menu for setting up network adapters
+
+################################################################################
+                BACKUPS
+################################################################################
+
+CPIO ARCHIVE
+------------
+
+find (filesystem) -print | cpio -ocv > (filename or device)
+
+eg find ./usr/ -print | cpio -ocv > /dev/rStp0
+
+CPIO RESTORE
+------------
+
+cpio -ict < (filename or device) | more        Lists archive
+cpio -icdv < (filename or device)
+cpio -icdv < (filename or device) ("files or directories to restore")
+
+eg cpio -icdv < /dev/rStp0 "tcpip/*"           Restore directory and contents
+   cpio -icdv < /dev/rStp0 "*resolve.conf"    Restore a named file
+
+TAR ARCHIVE
+-----------
+
+tar -cvf (filename or device) ("files or directories to archive")
+
+eg tar -cvf /dev/rStp0 "/usr/*"
+
+TAR RESTORE
+-----------
+
+tar -tvf (filename or device)             Lists archive
+
+tar -xvf (filename or device)            Restore all
+tar -xvf (filename or device) ("files or directories to restore")
+use -p option for restoring with orginal permissions
+use -A option for suppressing absolute file pathes        #djn 5_01
+
+eg tar -xvf /dev/rStp0 "tcpip"            Restore directory and contents
+   tar -xvf /dev/rStp0 "tcpip/resolve.conf"    Restore a named file
+
+
+################################################################################
+                TAPE DRIVES
+################################################################################
+
+/dev/xct0    Cartridge tape controller
+/dev/erct0    Error correcting cartridge tape
+/dev/nrct0    No rewind cartridge tape
+/dev/rct0    Cartridge tape
+/dev/rStp0    SCSI tape
+/dev/rctmini    Mini catridge tape
+/dev/rft0    QIC40 floppy tape
+
+Cartridge         rct0 nrct0 xct0
+SCSI cartridge or DAT    rStp0 nrStp0 xStp0
+Mini cartridge        rctmini nrctmini xctmini
+
+/dev/r        Rewinds on closing
+/dev/nr        No rewind on closing
+/dev/x        Control file used by the tape command, cannot be used for data
+
+tape reten (device)    Retension the tape
+tape rewind (device)    Rewind the tape
+tape erase (device)    Erase the tape
+tape status (device)    Is there a tape in the drive ?
+tape unload (device)    Eject a tape
+tape getblk (device)    Reads and reports the block size of the tape
+
+tape -a (new block size) setblk (device)    Sets the block size
+
+If no device used the will use default in tape     /etc/defaults/tape
+
+dtype (device)    Reports what type of data is on the devices (cpio, tar etc)
+
+################################################################################
+                PRINT QUEUES
+################################################################################
+
+lpstat -t
+lpstat -a        Will display "text message" 
+
+reject (pqueue)        Stops requests being placed in the queue
+accept (pqueue)        Enables requests to be placed in the queue
+
+reject -r "text message" (pqueue)
+
+disable (pqueue)    Halts the queue, request will still be accepted
+enable (pqueue)        Enables the queue afte being halted
+
+disable -r "text message" (pqueue)
+
+/usr/lib/lpshut        Stop the print sheduler
+/usr/lib/lpsched    Start the print sceduler
+
+cancel (job id)        Cancel a job that is queuing
+
+lp -i (job id) -H hold        Hold a job
+lp -i (job id) -H resume    Cancel the hold on a job
+lp -i (job id) -H immediate    Promote a job within a queue
+lp -i (job id) -d(pqueue)    Move a job between queues
+
+$LPDEST        Default queue variable
+
+/etc/printcap        Config file for print queues
+/usr/spool/lp        Contains local printers
+/usr/spool/lpd        Contains remote printers
+
+################################################################################
+                HARD DRIVES
+################################################################################
+
+dkinit            Displays non scsi disk details
+
+scsibadblk    Scans for bad tracks on disk
+badtrk        As as scsibadblk
+
+fdisk            Divides a hard disk into partitions
+fdisk -p        Displays partion information
+fdisk -p -f (device)    Displays partion information for named device
+fdisk -p -f /dev/rhd00
+
+################################################################################
+                FILE SYSTEMS
+################################################################################
+
+HTFS    High Throughput filesystem
+    2 gig max file size
+    1 tera max file system size
+    1k block size
+    Not bootable
+
+DTFS    Desktop filesystem
+    2 gig max file size
+    1 tera max file system size
+    512 byte to 4k block size
+    Not bootable
+
+EAFS    Extended Acerfile file system
+    2 gig max file size
+    2 gig max file system size
+    1k block size
+    Bootable and default
+
+AFS, S51K, XENIX <- Other bootable filesystems
+
+divvy            Divides disk partions into divisions for filesystems
+divvy -N -P        Displays division information
+divvy -N -P (device)    Displays division information for 2nd disk drive
+divvy -N -P /dev/hd1a
+
+fstyp (device eg /dev/root)    Displays filesystem type
+
+/dev/root    Boot filesystem (/stand)
+/dev/recover
+/dev/root    Root filesystem (/)
+/dev/swap    Swap space
+
+fsck (device)    Verify a file system, the file system must be unmounted,
+        except the /dev/root filesystem, you must be in single user
+        mode (init 1) or have booted from boot/root.
+
+fsck -o full (device)    Forces a full fsck.
+fsck -y (device)    Pre-answer questions either yes or no !
+fsck -bs (device)    Will recreate superblock
+
+mkdev fs        Screen for Creating and deleting filesystems
+
+mount                  Lists all the mounted filesystems
+mount (fs or device)    Mounts a named filesystem
+mountall         Mounts all filesystems
+mount -r -f ISO9660 -o lower /dev/cd0 /miscd   # mounts a standard cd
+
+fuser -u (/mount point)    Lists who is using the filesystem
+
+################################################################################
+                SWAP SPACE
+################################################################################
+
+swap -l        Lists swap space and useage.
+
+################################################################################
+                BOOTING
+################################################################################
+
+kernel        Will display path and name of the kernel used to boot system
+
+mount /dev/hd0root /mnt        Mounts root filesystem over /mnt when you 
+                have booting from boot/root floppies.
+
+mount /dev/boot /mnt/stand    Mounts boot filesystem.
+
+Boot: hd(40)unix    Boot floppy, load kernel from hard drive.
+            Used when /boot not found error
+
+Boot: fd(64)unix root=hd(40) swap=hd(41)    Unix from floppy, mount root
+                        filesystems on hard disk.
+
+Boot: unix.old        Load the previous version of the kernel
+            (Must be in /stand {/dev/boot} directory)
+
+Boot: dir        Displays whats in /stand (/dev/boot)
+
+Boot: bootos ?        Lists partitions
+Boot: bootos 4        Boot from a non-active partition
+
+Boot: defbootstr btld=fd(61) link=alad325 Sdsk=alad(0,0,0,0)
+
+    btld Boot time loadable driver can be found at fd(61) b: drive,
+         defaults to fd(60) a: if not present.
+    link Uses driver alad325 from device specified in btld, driver
+         disks are unix filesystem disks.
+    Sdsk Device to use the boot time loadable driver with :-
+        alad is for the controller, 
+           0 is host adapter
+           0 is bus on the adapter
+           0 is drive scsi id
+           0 is LUN
+
+################################################################################
+                SCHEDULING
+################################################################################
+
+crontab -l            List out crontab entrys
+crontab -e            Edit crontab entrys
+crontab -l > (filename)        Output crontab entrys to a file
+crontab (filename)        Enter a crontab from a file
+crontab -r            Removes all crontab entrys
+crontab -v            Displays crontab submission time.
+
+/usr/lib/cron/cron.allow        File containing users allowed crontab use.
+/usr/lib/cron/cron.deny         File containing users denied crontab use.
+/usr/spool/cron/crontabs    Directory containing users crontabs
+
+at (now + 2 minutes, 13:05, etc) {return}    Schedule a job using at
+Command or schell script {return}
+{CTRL D}
+
+at -l                
+
+at -r (at job No)
+
+/usr/lib/cron/at.allow        File containing users allowed at use.
+/usr/lib/cron/at.deny        File containing users denied at use.
+/usr/spool/cron/atjobs        Directory contains users at jobs
+
+################################################################################
+                SECURITY
+################################################################################
+
+chmod abcd (filename)    Changes files/directory permissions
+
+Where a is  (4 SUID) + (2 SGID)  + (1 SVTX)
+      b is  (4 read) + (2 write) + (1 execute)  permissions for owner
+      c is  (4 read) + (2 write) + (1 execute)  permissions for group
+      d is  (4 read) + (2 write) + (1 execute)  permissions for others
+
+
+ -rwxrwxrwx   -rwxrwxrwx   -rwxrwxrwx
+  |||             |||             |||
+   -               -               -
+   |               |               |
+ Owner           Group           Others
+
+ -rwSrwxrwx = SUID   -rwxrwSrwx = SGID   drwxrwxrwt = SVTX
+
+
+chown (new owner) (filename)    Changes file/directory owners
+chgrp (new group) (filename)    Changes file/directory groups
+
+umask                Displays umask settings
+umask abc            Changes users umask settings
+
+where ( 7 - a = new file read permissions)
+      ( 7 - b = new file write permissions) 
+      ( 7 - c = new file execute permissions)
+
+eg umask 022 = new file permissions of 755 = read write and execute for owner   
+                                             read ----- and execute for group
+                                             read ----- and execute for other
+
+passwd            Change current user password
+passwd -l (user)    Lock a users account
+passwd -u (user)    Unlock a users account
+
+goodpw        Test to see if a passwd is acceptable.
+
+pwck        Checks /etc/passwd file for inconsistencies
+grpck        Checks /etc/group file for inconsistencies
+
+################################################################################
+                USERS
+################################################################################
+
+env        Displays values of environment variables
+
+id         Displays current user's uid and gid details
+id (user)    Displays user uid and gid details
+
+who        Displays details of all users currently logged in.
+w
+
+quot (filesystem)    Displays disk useage by user
+
+useradd
+
+userdel            (Note does not remove home dir)
+rmuser
+
+userls -l (username)
+
+usermod
+
+groupls            Lists what groups you are in.
+groupls (username)
+groupls -a        Lists all groups
+
+groupmod
+
+groupadd
+
+groupdel
+rmgroup
+
+passwd (username)
+rmpasswd
+
+unretire (username)    To reactivate a retired user
+
+################################################################################
+            INIT RUN LEVELS
+################################################################################
+
+init (run level)      Switches run levels
+
+0    Shutdown
+1    Single user
+2,3,4    Multiuser
+6    Reboot
+
+
+haltsys  
+reboot
+
+shutdown -g(number)    grace period before starting shutdown
+         -y        answer y to all further questions
+         -i(number)    shutdown to run level
+
+shutdown -y -g0 -i1    To shutdown to single user mode
+shutdown -y -g0 -i6    To shutdown and reboot system.
+
+who -b        Displays when the machine was last booted
+who -r        Displays what the current run level is
+
+
+################################################################################
+                             SERIAL PORTS
+################################################################################
+
+com1 = /dev/tty1a (terminal/getty) or /dev/tty1A (dial out modem)
+com2 = /dev/tty2a (terminal/getty) or /dev/tty2A (dial out modem)
+
+enable /dev/tty1a    Enables the getty on /dev/tty1a
+disable /dev/tty1a    Disables the getty on /dev/tty1a
+(above edits both /etc/inittab and /etc/conf/init.d/sio files)
+
+/etc/inittab
+/etc/gettydefs
+
+/etc/conf/init.d/sio    Contains the defaults for the serial part of inittab.
+            Will recreate inittab from this when the environment
+            is rebuilt using link_unix.
+
+################################################################################
+                             ERROR LOGGING
+################################################################################
+
+/usr/adm/messages
+
+
+################################################################################
+                              PERFORMANCE
+################################################################################
+
+sar (delay) (repeats)
+
+options :-
+
+-r    Displays amount of free memory and free swap
+-d    Displays disk and tape activity
+-b    Displays buffer activity
+-u    Displays cpu useage
+
+swap -l        Displays swap details and useage
+
+/etc/conf/cf.d/configure -x    Displays kernel parameters
+sysdef
+
+################################################################################
+                              FLOPPY DRIVES
+################################################################################
+
+ 48ds9        360Kb        5.25 inch
+ 96ds15        1.2Mb        5.25 inch
+135ds9        720Kb        3.5 inch
+135ds18        1.44Mb        3.5 inch
+135ds36        2.88Mb        3.5 inch
+ | | |
+ | | +------ sectors per track
+ | +-------- ds = double sided
+ +---------- tracks per inch
+
+/dev/rfd0135ds18 = floppy disk 0 3.5" 1.44Mb
+
+format        Formats disk for use.
+
+mkdev fs    Screen for creating root/boot disks or floppy filesystems
+
+diskcp        Disk to disk copy
+diskcp -f    Disk to disk copy with format first.
+
+################################################################################
+                              DOS DISKETTES
+################################################################################
+
+doscp
+dosrm
+
+dosdir        List dos directories in dos dir style
+dosdir /dev/fd0 or dosdir a:
+
+dosls        List dos directories in unix ls style
+
+dosformat    Format a dos floppy
+
+dosmkdir    Create a dos directory
+dosrmdir    Remove a dos directory
+
+doscat
+
+dtox (in file) > (out file)    Dos to unix ascii file conversion
+
+
+xtod (in file) > (out file)    Unix to dos ascii file conversion

@@ -1,0 +1,729 @@
+#!/bin/bash NOT A REAL SHELL SCRIPT!
+# This is a cut'n'paste scriptlet
+# be sure to read & understand what you're cutting & pasting!
+#
+# ISO date stamp
+`date +%Y%m%d-%H%M`
+
+################################################################################
+# methods to determine original build date
+ls -alct ~root
+tune2fs -l /dev/sda1 | grep created
+ls -l /etc/ssh/ssh_host_key
+rpm -qi basesystem | grep "Install Date"
+
+# beware that VMs built from common image may not work w/the above
+#    As of now, this is the best way I've found fer these
+ls -l /etc/sysconfig/network /etc/sysconfig/rhn/systemid /etc/ssh/ssh_host_key
+
+################################################################################
+#PAM-style password locks
+#To check:
+pam_tally2 --username=<username>
+
+#To unlock:
+pam_tally2 --username=<username> --reset
+
+# find external-facing IP address
+curl ipecho.net/plain;echo
+
+# List number of files open per process
+touch /tmp/fo; fer i in `ls -d /proc/[0-9]*` ; do echo -n "$i  " >>/tmp/fo;find $i/fd 2>>/dev/null | wc -l >>/tmp/fo; done ; sort -k2n /tmp/fo ; rm -f /tmp/fo
+
+# Projects to check
+iozone
+bonnie++
+vagrant
+puppet
+ktune
+
+# To analyze kdump files:
+yum install crash yum-utils
+debuginfo-install kernel
+# Must subscribe to "rhel-6-[variant]-debug-rpms" or "rhel-[architecture-variant]-6-debuginfo"
+crash /var/crash/[timestamp]/vmcore /usr/lib/debug/lib/modules/[kernel]/vmlinux
+
+# Install list of packages in a file w/yum:
+yum -y install $(cat <filename>)
+
+#Properly mount an ISO
+mount -t iso9660 <isofile> <mountpoint> -o loop
+
+# Make swap partition on /dev/sdb use full disk
+swapoff -a
+parted /dev/sdb rm 1
+parted -a optimal /dev/sdb mkpart primary linux-swap 0% 50%
+mkswap /dev/sdb1
+sed -i "s/^U.*swap/\/dev\/sdb1    swap    swap/" /etc/fstab
+swapon -a
+
+################################################################################
+## sync installed OS files on yum-based systems ################################
+# source system:
+# Exact version:
+rpm -qa >/tmp/y.l
+# Newest version:
+rpm -qa --qf "%{NAME}\n" >/tmp/y.l
+scp /tmp/y.l {destination}:/tmp
+# -or -
+scp /var/log/rpmpkgs {destination}:/tmp/y.l
+# note that /var/log/rpmpkgs is only updated once a day
+# destination system (decide: [install|update] ; normally install):
+yum -y install $(cat /tmp/y.l | sed s/.rpm// )
+#
+################################################################################
+# Working w/SAN & NAS ##########################################################
+# find WWN's:
+cat /sys/class/fc_host/*/port_name
+
+# Check HBA status:
+systool -vc fc_host
+
+# Check fer fiber card
+lspci  | grep -vi intel | grep -iv Switch
+
+# Try to convince Linux to rescan fer disk:
+ echo "- - -" > /sys/class/scsi_host/host0/scan
+ echo "- - -" > /sys/class/scsi_host/host1/scan
+ echo "- - -" > /sys/class/scsi_host/host2/scan
+ echo "- - -" > /sys/class/scsi_host/host3/scan
+ echo "- - -" > /sys/class/scsi_host/host4/scan
+ echo "- - -" > /sys/class/scsi_host/host5/scan
+
+# raw disk stuff
+service rawdevice
+cat /etc/sysconfig/rawdevices
+
+# set uid/gid via udev rules
+cp /usr/share/doc/device-mapper-version/12-dm-permissions.rules /etc/udev/rules.d/
+vi /etc/udev/rules.d/12-dm-permissions.rules
+# Add below -- change serial number & name as needed
+KERNEL=="dm*", SUBSYSTEM=="block", ENV{DEVTYPE}=="disk", ENV{ID_SERIAL}=="36000c29127c3ae0670242b058e863393", NAME+="oracleasm/disk1", OWNER="oracle", GROUP="oinstall", MODE="0660"
+
+################################################################################
+# RHEL-specific commands########################################################
+# automatic bug reporting tool
+abrt-cli --report DIR
+# submit files fer support, and other stuff
+redhat-support-tool
+
+#To manage channels on a system from the commandline:
+rhn-channel --list
+rhn-channel --add -c <channelname>
+rhn-channel --remove -c <channelname>
+
+# list energy policy
+x86_energy_perf_policy -r
+
+# enable numad on systems which support it (multi-socket recommended)
+cat >>/etc/fstab <<EOF
+cgroup			/cgroup/cpuset		cgroup	cpuset		0 1
+EOF
+mkdir -p /cgroup/cpuset ; mount /cgroup/cpuset
+chkconfig numad on && service numad start
+
+# recommendation fer mysql servers running single large instance is to set numa thus:
+numactl --interleave=all
+# further, percona mysql 5.5+ has enhanced numa support: http://www.percona.com/doc/percona-server/5.5/performance/innodb_numa_support.html
+# fer more mysql goodness, check http://www.thomas-krenn.com/en/wiki/MySQL_Performance_Tuning
+
+# RHEL repo file fer local media
+cat >> /etc/yum.repos.d/rhel-dvd.repo <<EOF
+[rhel-dvd]
+name=RHEL $releasever - $basearch - DVD
+baseurl=file:///media/
+enabled=1
+gpgcheck=1
+gpgkey=file:///media/RPM-GPG-KEY-redhat-release
+EOF
+#NOTE: may need to change paths
+################################################################################
+# disk stuff ###################################################################
+blockdev --report
+fdisk -l
+ls -l /dev/disk/by-id
+lspci -v # pciutils
+sg_inq /dev/sda # sg3-utils
+ls /sys/block
+lsblk
+################################################################################
+# LVM STUFF ####################################################################
+# Simple creation process
+# Given:
+#   DEV  = /dev/sde
+#   VG   = vg01
+#   LV   = lv00
+#   SIZE = 10G
+# NOTE: It is completely valid to use full disk for pv rather then a partition
+pvcreate --metadatacopies 2 ${DEV}
+vgcreate -s 32M ${VG} ${DEV}
+
+lvcreate -L ${SIZE} -n ${LV} ${VG}
+
+# Get info on [physical volumes|volume groups|logical volumes]
+[pvl]vdisplay -v
+[pvl]vs -v
+[pvl]vs -a -o +devices
+#lvs attributes are:
+#   1. volume type: (m)irrored, (M)irrored without initail sync, (o)rigin,
+#                   (p)vmove, (s)napshot, invalid (S)napshot, (v)irtual,
+#                   mirror (i)mage mirror (I)mage out-of-sync, under (c)onversion
+#   2. permissions: (w)rite, (r)ead-only
+#   3. allocation policy - (c)ontiguous, c(l)ing, (n)ormal, (a)nywhere, (i)nherited
+#   4. fixed (m)inor
+#   5. state: (a)ctive, (s)uspended, (I)nvalid snapshot,
+#             invalid (S)uspended snapshot,
+#             mapped (d)evice present with-out tables,
+#             mapped device present with (i)nactive table
+#   6. device (o)pen (mounted in other words)
+
+# extend a filesystem with all available space
+lvextend -l +100%FREE /dev/mapper/${VG}-${LV}
+resize2fs /dev/mapper/${VG}-${LV}
+
+# misc lvm-related commands
+lvmdiskscan
+dmsetup [ls|table|status|info]
+
+# details lv info esp. in regards to mirrors
+lvs -a -o +devices
+lvs -a -o +seg_pe_ranges --segments
+# display mirror volumes
+lvdisplay --maps
+
+# NOTE: vgexport does not remove a volume group on linux like it does in hpux.
+#       It basically only makes it “safe” to move.  Not only that but you can’t
+#       remove an exported volume group.
+# To remove a volume group on linux:
+# First make sure vg is available and active
+vgimport –v ${VG}
+vgchange –a y ${VG}
+# Must do this fer each logical volume
+lvremove /dev/${VG}/${LV}
+# Now delete volume group
+vgchange –a n ${VG}
+vgremove –v ${VG}
+
+#Clone logical volume to new device (aka, temporary mirror)
+#   volume group: ${VG}
+#   logical vol:  ${LV}
+#   old disk:     ${OD} (such as /dev/sde)
+#   new disk:     ${ND} (such as /dev/sdf)
+# create new pysical volume
+pvcreate ${ND}
+# add to existing volume group
+vgextend ${ND} ${VG}
+# convert logical volume to mirror set
+#   NOTE: "core" is not normally a recommended mirrorlog, but is fine for this work
+lvconvert --mirrorlog core -m1 ${VG}/${LV}
+# this will take awhile, will show progress. also, this can be used to check progress:
+lvs -a -o name,copy_percent,devices ${VG}
+# remove old pysical volume from mirror set
+lvconvert -m0 ${VG}/${LV} ${OD}
+# remove old pysical volume from volume group
+vgreduce ${VG} ${OD}
+################################################################################
+## TIPS/TRICKS fer various commands#############################################
+# lsof tips/tricks
+#   FD – Represents the file descriptor. Some of the values of FDs are:
+#       cwd – Current Working Directory
+#       txt – Text file
+#       mem – Memory mapped file
+#       mmap – Memory mapped device
+#   NUMBER – Represent the actual file descriptor. The character after the
+#       number i.e ’1u’, represents the mode in which the file is opened.
+#       r fer read, w fer write, u fer read and write.
+#   TYPE – Specifies the type of the file. Some of the values of TYPEs are,
+#       REG – Regular File
+#       DIR – Directory
+#       FIFO – First In First Out
+#       CHR – Character special file
+# General
+# delete line X in a file
+sed -i "Xd" <file>
+
+# summrize where auditd messages are from
+aureport --start today --event --summary -i
+
+# vmstat examples
+# memory utilization
+vmstat -m
+# active/inactive memory pages
+vmstat -a
+
+# mpstat examples
+mpstat -P ALL
+
+# ps examples
+# show (almost) everything
+ps -AlF
+# above with threads
+ps -AlFH
+# print process tree
+pstree
+# print process tree with info
+ps -ejH
+# print process tree with extended info
+ps axfj
+# print top 10 memory consuming
+ps --sort="-vsz" axo "user,pid,ppid,vsz,args" |head
+ps auxf | sort -rnk4 | head
+# print top 10 cpu consuming
+ps --sort="-%cpu" axo "user,pid,ppid,%cpu,args" |head
+ps auxf | sort -rnk3 | head
+# owners of a process
+ps -eo euser,ruser,suser,fuser,f,comm,label
+
+# lsof examples
+# list processes which opened a specific file
+lsof /path/to/file
+# list opened files under a directory (note trailing /)
+lsof +D /path/to/dir/
+# list opened files based on process names starting with
+lsof -c <name> -c <name>
+# list processes using a mount point
+lsof +D /mountpoint/
+# list files opened by a specific user
+lsof -u <username>
+# list files opened by all except a specific user
+lsof -u ^<username>
+# list files opened by a specific process
+lsof -p <PID>
+# combine arguments with -a
+lsof -u <username> -c <name> -a
+# repeat output
+lsof -u <username> -c <name> -a -r<#>
+# list network connections
+lsof -i
+# network files in use by process
+lsof -i -a -p <PID>
+# network files listening on a port
+lsof -i :<portnumber>
+# list all NFS files
+lsof -N
+# list UNIX domain files
+lsof -U
+# kill everything a user is doing (-t returns just the pid)
+kill -9 `lsof -t -u <username>`
+# show open files with link count less than 1
+lsof +L1
+# find running processes using a particular library, such as the crypto ones:
+lsof | egrep "libssl|libcrypto" | cut -f 1 -d " " | sort |uniq
+# num of open file descriptors for a <PID> or a <username>
+lsof -P -M -l -n -d '^cwd,^err,^ltx,^mem,^mmap,^pd,^rtd,^txt' -p <PID> -a      | awk '{if (NR>1) print}' | wc -l
+lsof -P -M -l -n -d '^cwd,^err,^ltx,^mem,^mmap,^pd,^rtd,^txt' -u <username> -a | awk '{if (NR>1) print}' | wc -l
+
+################################################################################
+# some nmap examples - in most cases hostname can be replaced w/ip or subnet
+#   see also: http://www.cyberciti.biz/networking/nmap-command-examples-tutorials/
+# guess OS of host (as root)
+nmap -v -O --osscan-guess <hostname>
+nmap -A <hostname>
+# scan list of hosts from a file
+nmap -iL <filename>
+# is host protected by firewall
+nmap -sA <hostname>
+# scan fw protected host
+nmap -PN <hostname>
+# scan working servers/devices on a network
+nmap -sP <subnet>
+# reason port is in a state
+nmap --reason <hostname>
+# show host interfaces and routes
+nmap --iflist
+# attempte to detect version number of remote services
+nmap -sV <hostname>
+
+# tcpdump examples
+# info about DNS
+tcpdump -i <nic> 'udp port 53'
+# all IPv4 HTTP packets to/from port 80
+tcpdump 'tcp port 80 and (((ip[2:2] - ((ip[0]&0xf)<<2)) - ((tcp[12]&0xf0)>>2)) != 0)'
+# top20 of Using tcpdump port 80 access to view
+tcpdump -i eth0 -tnn dst port 80 -c 1000 | awk -F"." '{print $1"."$2"."$3"."$4}' | sort | uniq -c | sort -nr |head -20
+# basic packet viewing, this increases with -nnvvS, -nnvvXS, and -nnvvXSs 1514
+tcpdump -nS
+# IP-based monitoring:
+tcpdump [host|src|dst] <ip address>
+
+# netstat/ss examples
+# NOTE: netstat has been deprecated in RHEL7, one alternatvie is lsof:
+lsof -i 4 -a
+# sorted connection states
+netstat -nat |grep -v "^[PA]" |awk '{print $6}'|sort|uniq -c|sort -rn
+ss -nat |grep -v "^State" |awk '{print $1}'|sort|uniq -c|sort -rn
+# view all connections to port 80
+netstat -nat|grep -i ":80"|wc -l
+ss -nat|grep -i ":80"|wc -l
+# connected IP sorted by number of connections
+netstat -ntu |grep -v "^[PA]" | awk '{print $6}' | cut -d: -f1 | sort | uniq -c | sort -n
+ss -ntu |grep -v "^Netid"| awk '{print $2}' | cut -d: -f1 | sort | uniq -c | sort -n
+# top20 of Find the number of requests on 80 port
+netstat -anlp|grep 80|grep tcp|awk '{print $5}'|awk -F: '{print $1}'|sort|uniq -c|sort -nr|head -n20
+# top20 of Find time_wait connection
+netstat -n|grep TIME_WAIT|awk '{print $5}'|sort|uniq -c|sort -rn|head -n20
+ss -nat|grep TIME-WAIT|awk '{print $5}'|sort|uniq -c|sort -rn|head -n20
+# top20 of Find SYN connection
+netstat -an | grep SYN | awk '{print $5}' | awk -F: '{print $1}' | sort | uniq -c | sort -nr|head -n20
+# what is listening on what port?
+netstat -tulpn
+ss -tulpn
+
+# ip examples
+# replace 'ifconfig -a'
+ip addr show
+# replace 'netstat -rn'
+ip route show
+
+################################################################################
+# sar examples
+# display network stats per port
+sar -n DEV
+# Displaying the I/O Transfer Rate:
+sar -b
+# Displaying the CPU Load:
+sar -P ALL
+# Display RAM usage:
+sar -r
+# Display swap usage:
+sar -S
+# Display paging stats:
+sar -B
+# Display queue/load average:
+sar -q
+# More: http://www.2daygeek.com/sar-command-examples/
+
+################################################################################
+# rpm/yum/dnf examples
+# View the Changelog
+rpm -q --changelog <packagename> | less
+# Where's the Documentation?
+rpm -qd <packagename>
+rpm -qdf /path/to/file
+# view package details
+rpm -qlvp <packagename>.rpm
+# Query Package Install Order and Dates
+rpm -qa --last | less
+# extract all files from rpm
+rpm2cpio <packagename>.rpm | cpio -idmv
+# Extract just one File
+rpm2cpio <packagename>.rpm |cpio -ivd <path>/<filename>
+# repo priority (broken?)
+sed -n -e "/^/h; /priority *=/{ G; s/\n/ /; s/ity=/ity = /; p }" /etc/yum.repos.d/*.repo | sort -nk3
+# Some ways to find value of yum variables
+python -c 'import yum, pprint; yb = yum.YumBase(); pprint.pprint(yb.conf.yumvar, width=1)'
+yum version nogroups
+# create repodata information
+createrepo --update --basedir /path/to/repo/ -c /path/to/repo/.cache /path/to/repo/
+# list files in package from yum repo (first two require yum-utils)
+repoquery -l <packagename>
+repoquery -lq --installed <packagename>
+dnf repoquery -l <packagename>
+# list installed rpms by size
+rpm -qa --queryformat="%{NAME} %{SIZE}\n" | sort -k 2 -n
+
+# pmap (process memory usage) examples
+# report memory map of a process
+pmap -d <pid>
+
+# list [summary|list|info] about update advisories (defaults to summary)
+yum updateinfo [summary|list|info] [security] [installed|available|all] [pkgs|id]
+dnf updateinfo [summary|list|info] [security] [installed|available|all] [pkgs|id]
+# mark a package as having been installed by user
+dnf mark install <packagename>
+# list of packages extras (stuff not in repos), obsoletes, recent (pkgs recently added),
+#       upgrades, autoremove (pkgs would be removed w/'dnf autoremove')
+yum list [<packagename>|all|installed|extras|obsoletes|recent|updates]
+dnf list [<packagename>|all|installed|extras|obsoletes|recent|upgrades|autoremove]
+# list package dependencies
+yum deplist <packagename>
+dnf repoquery --requires <packagename>
+
+################################################################################
+# find examples
+# find only [files|directories]
+find <path> -type [f|d]
+# find files by names, ignore case
+find <path> -iname <name>
+# find files over 1024 megabytes
+find <path> -size +1024M
+# find files modifed more then 7 days ago
+find <path> -mtime +7
+# find files modifed in last 30 minutes
+find <path> -mmin -30
+# delete files not owned by valid users
+find <path> -nouser | xargs -0 rm
+# delete 0 byte files
+find . -type f -size 0| xargs -0 rm
+
+################################################################################
+## systemd things
+# check how long the last boot took. blame will show each startup item
+systemd-analyze [blame]
+
+###############################################################################
+## VMWare stuff ###############################################################
+# check entropy - this will typically be low (below 500) as VMWare doesn't provide hardware entropy
+cat /proc/sys/kernel/random/entropy_avail
+# if this is an issue, install rng-tools, and run this (it can take quite awhile)
+rngd -r /dev/urandom -o /dev/random -f
+# this will refill /dev/random with entropy. this can be added to startup
+#  see: https://access.redhat.com/discussions/1203273 and https://access.redhat.com/documentation/en-US/Red_Hat_Enterprise_Linux/6/html/Security_Guide/sect-Security_Guide-Encryption-Using_the_Random_Number_Generator.html
+
+
+###############################################################################
+## HP Hardware stuff ##########################################################
+# ilo settings via command line fer HP physical systems
+hponcfg -a -w /tmp/ilo
+vi /tmp/ilo
+
+     {{ change DHCP_ENABLE VALUE to "y" & REMOVE all “ADD_USER” entries }}
+
+hponcfg -f /tmp/ilo
+
+# normally install these packages:
+yum install hpacucli hp-smh-templates hpacucli hpdiags hponcfg hpsmh hpssacli hpsum
+
+# Utilities
+cpqacuxe            HP Array Configuration Utility (web-based)
+fibreutils          HP StorageWorks Fibre Channel HBA Fibreutils
+hp-ams              HP ProLiant Gen8 Systems Agentless Monitoring Service
+hp-cnu              HP Converged Network Utility
+hp-health           HP System Health Application and Command Line Utilities
+hp-smh-templates    HP System Management Homepage
+hp-snmp-agents      HP SNMP Agents
+hpacucli            HP Array Configuration Utility CLI
+hpadu               HP Array Diagnostics Utility
+hpdiags             HP Insight Diagnostics Online Edition
+hpmouse             HP iLO2 High-Performance Mouse X driver
+hponcfg             HP Lights-Out Online Configuration Utility
+hpsmh               HP System Management Homepage
+hpss                HP Smart Storage Administrator
+hpssacli            HP Command Line Smart Storage Administrator
+hpsum               Useful fer firmware updates 
+hpvca               HP Version Control Agent
+
+#Drivers
+# NOTE: I've heard RedHat's built-in drivers are kept up-to-date w/HP's,
+#           thus it may not be necessary to use these...
+bnx2                HP NC-Series Broadcom 1Gb Multifunction Driver
+bnx2x               HP NC-Series Broadcom 10Gb Multifunction Driver
+e1000               HP NC-Series Intel Driver
+hplip               HP Linux Imaging and Printing drivers
+hp-lpfc             HP Linux Emulex based Fibre Channel HBAs driver kit
+hp_qla              HP StorageWorks QLogic Fibre Channel Driver
+tg3                 HP NC-Series Broadcom TG3 Driver
+
+###############################################################################
+## USEFUL COMMANDS ############################################################
+# General
+pv      monitor the progress of data through a pipeline
+gpm     console mouse, useful to wake console without pushing a key
+git-all good enough version control
+git-extras  additional commands fer git
+snappy  lazy-fast compression
+ncdu    graphical (console) du
+tmux    multiple, detachable remote term
+mosh    remote terminal application supporting intermittent connectivity
+inxi    general system information
+vipw    like visudo excpet /etc/passwed ('-s' does /etc/shadow)
+setsid  run a program in a new session
+apropos search the manual page names and descriptions
+autojump    keeps database of past directories fer easy cd into them 
+multitail   tail several files at once
+util-linux-ng   collection of basic system utilities
+moreutils   isutf8, sponge, ts, vidir, combine, ifdata, pee, zrun, mispipe, lckdo, ifne, and parallel
+colordiff   wrapper fo diff and produces the same output but with pretty syntax highlighting.
+
+# System monitor
+dstat   more powerful vmstat (try: dstat -lrvn 10)
+htop    more powerful top
+lsmod   show kernel moduels
+ps_mem  memory usage
+strace  debug tool
+sysdig  capture system state and activity, then save, filter and analyze.
+pstree  process tree
+atop    another top
+pidstat Report statistics on Linux tasks
+lscpu   display information about the CPU architecture
+lspci   list all PCI devices
+lstopo  Show the topology of the system -- also: lstopo-no-graphics
+lsusb   list USB devices
+mpstat  Report processors related statistics
+lpstat  print cups status information
+tunelp  set various parameters of the lp device
+ophelp  list OProfile events
+i7z     CLI curses based monitoring tool on Intel Core i7 processors
+perf    perf  mon of the Linux kernel-try:  perf stat [command]
+                                            perf top
+numastat show per-NUMA-node stats -- try:   numastat [-c|-n]
+                                            numastat -mczs
+                                            numastat [proc name|PID]
+numactl Control NUMA policy  -- use:        numactl --hardware
+
+# disk i/o
+lsblk       list block devices
+iotop       i/o top
+blkparse    produce formatted output of event streams of block devices
+blktrace    generate traces of the i/o traffic on block devices
+seekwatcher Utility to visualize block layer IO patterns & performance (blktrace)
+btt         analyse block i/o traces produces by blktrace
+findmnt     find a filesystem
+iostat      report io stats -- try: iostat -dmxz 3 ; iostat --only
+stat        display file or file system status
+scsi_id     get/make a unique SCSI identifier -- try: scsi_id -g -u -d /dev/path/of/device
+
+# Network monitor
+ss      another utility to investigate sockets
+ntop    network traffic probe similar to the UNIX top command
+iftop   network top
+ifstat  network iostat
+nload   A tool can monitor network traffic and bandwidth usage in real time
+jnettop more detailed iftop
+nicstat prints out network statistics fo all network interface
+mtr     more powerful traceroute
+vnstat  Console-based network traffic monitor
+bmon    bandwidth monitor
+nmap    Network exploration tool and security / port scanner
+ndiff   show differneces in nmap scans
+nethogs network top
+arpwatch    Network monitoring tools to track IP addresses on a network
+tcptrack    Displays information about tcp connections on a network interface
+iptraf-ng   console-based network monitoring utility (or just 'iptraf')
+tcpflow     capture data transmitted over tcp connections
+                try: /usr/local/bin/tcpflow -F Tc -e http -i any -o tmp/sat -g port 80
+ifstatus    graphical ifstat
+dropwatch   kernel dropped packet monitoring utility
+ibmonitor   interactive bandwidth monitor
+biosdevname give BIOS-given name of a device -- try: biosdevname -i eth0
+monitorix   free, open source, lightweight system monitoring tool
+
+# Security
+suricata    Intrusion Detection System
+dsniff      Tools fer network auditing and penetration testing
+fwsnort     Translates Snort rules into equivalent iptables rules
+httpry      A specialized packet sniffer designed fer displaying and logging
+netcat (nc) Reads and writes data across network connections using TCP or UDP
+netsed      A tool to modify network packets
+netsniff-ng A high performance network sniffer fer packet inspection
+ngrep       Network layer grep tool
+nmap        Network exploration tool and security scanner
+scapy       Interactive packet manipulation tool and network scanner
+ssldump     An SSLv3/TLS network protocol analyzer
+tcpdump     A network traffic monitoring tool
+traceroute  Traces the route taken by packets over an IPv4/IPv6 network
+tcpick      A tcp stream sniffer, tracker and capturer
+tcpreplay   Replay captured network traffic
+tcpxtract   Tool fer extracting files from network traffic
+wireshark   Network traffic analyzer Network traffic analyzer
+lynis       Security and system auditing tool (http://cisofy.com/lynis)
+aide        Intrusion detection environment
+tripwire    IDS (Intrusion Detection System)
+
+## Packages ##
+systemtap   a system-wide instrumentation scripting tool
+                stap
+sendmail-cf needed to generate sendmail.cf files
+yum-utils   collection of yum utilites
+psmisc      Utilities to manage processes on your system
+                pstree
+                killall
+                fuser
+net-snmp    SNMP tools & libraries
+net-snmp-utils  Network management utilities using SNMP
+                snmpstatus  try: snmpstatus -c public -v 1 localhost
+                snmpwalk    try: snmpwalk -c public -v 1 localhost
+sg3_utils   SCSI command set utils
+                rescan-scsi-bus.sh
+hwloc       portable abstraction of hierarchical archetectures
+                lstopo
+cpupowerutils cpu power management utils
+                turbostat
+                powertop
+                cpupower
+
+# Development type tools
+rpm-build   Scripts and executable programs used to build packages
+rpm-devel   Development files to manipulate RPM packages
+valgrind    a suite of tools to debug and profile programs
+tuna        Application tuning GUI & command line utility
+ltrace      Library call tracer
+strace      system call and signal tracer
+
+#The psacct or acct package provides several features fer monitoring process activities.
+ac          command prints the statistics of user logins/logouts (connect time) in hours.
+                useful options: --daily-totals --individual-totals
+lastcomm    command prints the information of previously executed commands of user.
+accton      commands is used to turn on/off process fer accounting.
+sa          command summarizes information of previously executed commands.
+last; lastb commands show listing of last logged in users
+
+################################################################################
+## STUFF TO INSTALL
+# Useful utilities and packages to have installed (see above for more info)
+yum -y install dstat gpm hwloc iotop iptraf-ng lsof mtr ps_mem yum-utils
+yum -y install psmisc sg3_utils snappy strace systemtap tmux util-linux
+yum -y install vim git etckeeper
+# These require EPEL
+yum -y install atop autojump autojump-zsh bmon git-all htop ifstat ifstatus iftop
+yum -y install ibmonitor jnettop mosh multitail ncdu nethogs ntop sysdig tcptrack
+yum -y install inxi glances
+# On physical
+yum -y install cpupowerutils powertop i7z
+################################################################################
+# These are for a desktop/admin system
+dnf -y install freemind icedtea-web p7zip p7zip-plugins diffuse fuse-sshfs
+dnf -y install remmina "remmina-plugins-*" wireshark wireshark-gtk alacarte
+dnf -y install krb5-workstation krb5-auth-dialog dia "dia-*" gimp
+# On physical/multi-media systems
+dnf -y install pulseaudio-equalizer pulseaudio-qpaeq mplayer beep
+# on Gnome systems
+dnf -y install gconf-editor gnome-tweak-tool dconf-editor
+# on i3wm systems
+dnf -y install xclip 
+# Improved font handling (involves adding new repo and replacing some system packages)
+#   see: https://danielrenninghoff.com/2015/11/22/infinality-ultimate-bundle-packaged-for-fedora/
+dnf -y install http://rpm.danielrenninghoff.com/infinality/fedora/$(rpm -E %fedora)/noarch/infinality-ultimate-repo-$(rpm -E %fedora)-1.noarch.rpm
+dnf -y install --allowerasing cairo-infinality-ultimate fontconfig-infinality-ultimate freetype-infinality-ultimate fontconfig-infinality-ultimate-devel freetype-infinality-ultimate-devel
+dnf -y install --allowerasing  ibfonts-meta-base ibfonts-meta-extended-lt ibfonts-meta-extended
+dnf -y install --allowerasing  dejavu-ib-fonts-common dejavu-ib-sans-fonts dejavu-ib-sans-mono-fonts dejavu-ib-serif-fonts abattis-cantarell-ib-fonts cairo-infinality-ultimate-gobject
+dnf -y install --allowerasing  google-crosextra-caladea-ib-fonts google-crosextra-carlito-ib-fonts google-noto-ib-fonts texlive-tex-gyre-ib urw-ib-fonts
+dnf -y install --allowerasing  lohit-odia-ib-fonts lohit-gurmukhi-ib-fonts liberation-ib-fonts-common liberation-ib-mono-fonts liberation-ib-narrow-fonts liberation-ib-sans-fonts liberation-ib-serif-fonts
+# This setting is specifically to allow Firefox to run plugins on a SELinux enabled system:
+setsebool -P unconfined_mozilla_plugin_transition 0
+################################################################################
+# Notes about some services:
+# avahi-daemon   – no need to service discovery (printers, file servers, etc) on local network
+# bluetooth      – no need to use bluetooth on server
+# cups           – no need to run printing services (unless is Samba or CUPS server)
+# firstboot      – no longer needed.
+# hidd           – Bluetooth HID daemon for bluetooth input devices (keyboard/mouse)
+# hplip          – for printers drivers
+# mdmonitor      – monitors LVM or RAID information. not necessary for VM.
+# microcode_ctl  – utility for Intel IA32 processors
+# pcscd          – Smart Cards daemon used by pcsc-lite
+# rpcgssd        – good only for NFSv4
+# rpcidmapd      – good only for NFSv4
+# sendmail       – will be replaced with postfix
+# setroubleshoot – SELinux troubleshooting helper (not using SELinux and it can hog CPU and memory)
+# smartd         – not necessary to monitor disk inside a VM.
+# xinetd         – Good only for services that are occassionally accessed.
+# yum-updatesd   – not necessary to be notified of new updates. updates done manually.
+#
+# show services based on xinetd:
+chkconfig -list
+#
+################################################################################
+################################################################################
+################################################################################
+## WARNING!! THIS WILL CRASH LINUX!!!! WARNING!! #############################
+#echo 1 > /proc/sys/kernel/sysrq
+#echo c > /proc/sysrq-trigger
+################################################################################
+# WARNING!! HIGHLY DESTRUCTIVE!! WARNING!! #####################################
+# Zero out the first sector on a disk to erase partition table #################
+#dd if=/dev/zero of=PhysicalVolume bs=512 count=1
+# WARNING!! HIGHLY DESTRUCTIVE!! WARNING!! #####################################
+################################################################################
+
+

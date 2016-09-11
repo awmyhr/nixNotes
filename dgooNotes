@@ -1,0 +1,109 @@
+#!/bin/bash NOT A REAL SHELL SCRIPT!
+# This is a cut'n'paste scriptlet
+# be sure to read & understand what you're cutting & pasting!
+#
+# these are notes for Docker, Geard, OpenStack, and OpenShift
+
+################################################################################
+## geard
+#Usage: 
+#  gear [flags]
+#  gear [command]
+#Available Commands: 
+#  deploy <file> <host>...              :: Deploy a set of containers to the named hosts
+#  install <image> <name>... [<env>]    :: Install a docker image as a systemd service
+#  delete <name>...                     :: Delete an installed container
+#  build <source> <image> <tag> [<env>] :: (Local) Build a new image on this host
+#  set-env <name>... [<env>]            :: Set environment variable values on servers
+#  env <name>...                        :: Retrieve environment variable values by id
+#  link <name>...                       :: Set network links for the named containers
+#  start <name>...                      :: Invoke systemd to start a container
+#  stop <name>...                       :: Invoke systemd to stop a container
+#  restart <name>...                    :: Invoke systemd to restart a container
+#  status <name>...                     :: Retrieve the systemd status of one or more containers
+#  list-units <host>...                 :: Retrieve the list of services across all hosts
+#  add-keys <id>...                     :: Set keys for SSH access to a resource
+#  create-repo <name> [<url>]           :: Create a new git repository
+#  daemon                               :: (Local) Start the gear agent
+#  clean                                :: (Local) Stop and disable systemd gear units
+#  init <name> <image>                  :: (Local) Setup the environment for a container
+#  create-token <type> <content_id>     :: (Local) Generate a content request token
+#  auth-keys-command <username>         :: (Local) Generate authorized_keys output for sshd.
+#  test-router                          :: (Local) Test router extension.
+#  init-repo <name> [<url>]             :: (Local) Setup the environment for a git repository
+#  help [command]                       :: Help about any command
+# Available Flags:
+#  -S, --docker-socket="unix:///var/run/docker.sock": Set the docker socket to use
+#      --has-env-file=false: (experimental) Use --env-file with Docker, requires master from Apr 1st
+#      --has-foreground=false: (experimental) Use --foreground with Docker, requires alexlarsson/forking-run
+#      --key-path="": Specify the directory containing the server private key and trusted client public keys
+#      --with="": Provide a deployment descriptor to operate on
+
+gear deploy <file.json>
+gear status <gearname>
+gear list-units
+gear start <gearname>
+gear stop <gearname>
+gear delete <gearname>
+
+# demo gears mongodb-1 & rockmongo-1
+
+gear stop rockmongo-1; gear stop mongodb-1
+
+gear start mongodb-1 ; sleep 60 ; gear start rockmongo-1
+
+
+################################################################################
+## docker
+#Commands:
+#    attach    Attach to a running container
+#    build     Build a container from a Dockerfile
+#    commit    Create a new image from a container's changes
+#    cp        Copy files/folders from the containers filesystem to the host path
+#    diff      Inspect changes on a container's filesystem
+#    events    Get real time events from the server
+#    export    Stream the contents of a container as a tar archive
+#    history   Show the history of an image
+#    images    List images
+#    import    Create a new filesystem image from the contents of a tarball
+#    info      Display system-wide information
+#    insert    Insert a file in an image
+#    inspect   Return low-level information on a container
+#    kill      Kill a running container
+#    load      Load an image from a tar archive
+#    login     Register or Login to the docker registry server
+#    logs      Fetch the logs of a container
+#    port      Lookup the public-facing port which is NAT-ed to PRIVATE_PORT
+#    ps        List containers
+#    pull      Pull an image or a repository from the docker registry server
+#    push      Push an image or a repository to the docker registry server
+#    restart   Restart a running container
+#    rm        Remove one or more containers
+#    rmi       Remove one or more images
+#    run       Run a command in a new container
+#    save      Save an image to a tar archive
+#    search    Search for an image in the docker index
+#    start     Start a stopped container
+#    stop      Stop a running container
+#    tag       Tag an image into a repository
+#    top       Lookup the running processes of a container
+#    version   Show the docker version information
+#    wait      Block until a container stops, then print its exit code
+
+docker images
+docker ps
+docker ps -a
+docker run -i -t <containerid> <command>
+docker commit <containerid> <newreponame>
+docker tag <imageid> <tag>
+docker port
+docker inspect
+
+9f3bcb326f7f        fedora:20                           bash                   40 hours ago        Exit 0                                        backstabbing_archimedes   
+REPOSITORY                   TAG                 IMAGE ID            CREATED                  VIRTUAL SIZE
+openshift/centos-mongodb     latest              610bb693610d        Less than a second ago   614.6 MB
+openshift/centos-rockmongo   latest              68f96bb8ad2c        Less than a second ago   467.8 MB
+fedora-httpd-php             latest              976a64145edb        40 hours ago             625.3 MB
+registry                     0.6.8               2930bc3d8f1e        7 days ago               454.8 MB
+registry                     latest              2930bc3d8f1e        7 days ago               454.8 MB
+

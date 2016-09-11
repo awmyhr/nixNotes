@@ -1,0 +1,7 @@
+
+
+npm root [-g]   see where modules go (-g for global)
+npm bin [-g]    see where executables go (-g for global)
+npm ls [-g]     list installed packages (-g for global)
+
+

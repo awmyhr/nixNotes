@@ -1,0 +1,37 @@
+#!/bin/bash NOT A REAL SHELL SCRIPT!
+# This is a cut'n'paste scriptlet
+# be sure to read & understand what you're cutting & pasting!
+#
+# ISO date stamp
+`date +%Y%m%d-%H%M`
+
+# Power Path carp
+rescan-scsi-bus.sh  
+     # not pp specific, also not os native
+powermt check
+     #always worth while to run, safe, just reports any configuration issues
+powermt config
+     #configure/add new devices so they are under Powerpath control - this will also create the /dev/emcpower* devices
+powermt save
+     #save the configuration – you MUST DO THIS!!!!
+powermt display dev=all
+     #to display the config and disks
+#To rename disk (/dev/emcpower****) names:-
+# http://johnpjeffries.wordpress.com/2009/08/04/making-permissions-on-emc-powerpath-devices-persistent-for-crs-on-enterprise-linux/
+emcpadm renamepseudo -s <SRC emcpower<CHAR>> -t <DEST emcpower<CHAR>>
+     #e.g. emcpadm renamepseudo -s emcpowerold -t emcpowernew
+
+# For some reason, unknown to man or anyone else, though I’m sure there is a good one, 
+# powerpath puts its startup/initialization in the rc.sysinit file.  When a system is 
+# updated, this file is *usually* overwritten for various good reasons.  So if you are 
+# patching a host that runs powerpath you will need to add the following to the 
+# rc.sysinit file.  It goes in the section below, so you will need to search on 
+# “remount_needed” a couple times to hit the section.   You should do this before 
+# rebooting.
+
+###BEGINPP
+# Configure and initialize PowerPath.
+if [ -f /etc/init.d/PowerPath ]; then
+/etc/init.d/PowerPath start
+fi
+###ENDPP

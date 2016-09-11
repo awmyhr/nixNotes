@@ -1,0 +1,615 @@
+#!/bin/bash NOT A REAL SHELL SCRIPT!
+# This is a cut'n'paste scriptlet
+# be sure to read & understand what you're cutting & pasting!
+#
+# ISO date stamp
+`date +%Y%m%d-%H%M`
+#
+# NOTE: this has been updated to RHEL 6.5; some features
+#    may not be availabe in other versions/distros
+# See the end for VM 'Deploy from Template'
+################################################################################
+# Filesystem config (50(+2XRAM)G physical/40(+RAM)G VM) ########################
+Mount     Size (Physical/VM)       MIN (15G)
+/boot       1024 - nonLVM           512
+/           5120                   1536
+/usr       10240                   5120  *** See NOTE
+/var       10240                   5120
+/opt       10240/5120              none
+/home      10240/5120              1024
+/var/crash [same as RAM]/none      none
+swap       [See table] # NOTE: best to use seperate disk, nonLVM
+# Current (as of 20160823) swap space recommendations:
+# Amount of RAM     |Recommended swap space    |Recommended swap space if allowing for hibernation
+#   2GB or less     |Twice the installed RAM   |3 times the amount of RAM
+#   > 2GB - 8GB     |The same amount of RAM    |2 times the amount of RAM
+#   > 8GB - 64GB    |At least 4GB              |1.5 times the amount of RAM
+#   > 64GB or more  |At least 4GB              |Hibernation not recommended
+# Source: https://access.redhat.com/solutions/15244
+#/tmp      use tmpfs, size ~128m - 2048m (about 10% memory)
+tmpfs   /tmp    tmpfs   defaults,size=256m  0 0
+# Recommend naming volume group vg00
+# Use 32MB extents unless <2TB disk, then use 64MB
+# *** latest RHEL documents recommend leaving /usr as part of / ***
+#       This is due to boot-critical components living there.
+# RHEL7 - enable & turn on /tmp:
+systemctl enable tmp.mount && systemctl start tmp.mount
+# end Filesystem config ########################################################
+################################################################################
+# Server build process scriptlets below ########################################
+################################################################################
+# start backup various config files we're gonna change #########################
+mkdir ~/Archive
+tar zcf ~/Archive/etc.tgz /etc
+## Better Way(TM): install etckeeper
+yum install etckeeper
+etckeeper init
+etckeeper commit "Initial commit"
+# This is for sudo logs for some environments
+mkdir /var/adm/ && touch /var/adm/sudo.log
+# end backup ###################################################################
+################################################################################
+#   set network/bonding ########################################################
+# set hostname & default gateway
+vi /etc/sysconfig/network
+# fix hosts (hostname should not point to loopback):
+vi /etc/hosts
+
+#To find ports
+#cd /var/tmp
+#I=eth0 ; ifconfig $I up ; tcpdump -n -c 50 -i $I >e.$I ; ifconfig $I down
+
+# turn off stuff not normally needed
+#   RHEL7+ (and maybe RHEL6), leave NetworkManager on
+chkconfig NetworkManager off
+chkconfig iptables off
+chkconfig ip6tables off
+chkconfig cups off
+# mdmonitor only used for software RAID
+chkconfig mdmonitor off
+# only need postfix if system is mail relay server
+chkconfig postfix off
+
+#On RHEL7:
+systemctl stop firewalld.service && systemctl disable firewalld.service
+systemctl stop postfix.service && systemctl disable postfix.service
+
+systemctl list-unit-files
+# Also in RHEL 6, lets turn off SELinux
+setenforce 0
+/bin/sed -i -e 's/SELINUX=.*/SELINUX=disabled/' /etc/selinux/config
+
+# for RHEL5 and under add bonding config to /etc/modprobe.conf
+# >/etc/modprobe.conf <<EOF
+#alias bond0 bonding
+#options bond0 mode=0 miimon=100
+#alias bond1 bonding
+#options bond1 mode=0 miimon=100
+#EOF
+
+# For RHEL6 systems w/multiple networks, you may need to turn off
+#    strict source route verification on broken networks
+#vi /etc/sysctl.conf
+#    set "net.ipv4.conf.default.rp_filter" to 2 (loose) or 0 (off)
+
+# seems NetworkManager is the future, so here's how to add a static IP:
+#   example: nmcli con add con-name primary ifname eth0 type ethernet ip4 192.168.56.101/24 -gw4 192.168.56.1
+#            nmcli con mod primary ipv4.dns "8.8.8.8 8.8.4.4" ipv4.dns-search "example.com" mtu 9000
+#            nmcli -p con up "primary" ifname eth0
+nmcli con add con-name <name> ifname <nic> type ethernet ip4 <IP>/<nw> gw4 <GW>
+nmcli con mod <name> ipv4.dns "<dns1> <dns2>" ipv4.dns-search "domain" mtu <mtu>
+nmcli -p con up "<name>"
+# turn off wireless adapters
+nmcli radio all off
+# here's how to add a bond:
+# <mode> can be one of: balance-rr  (0) active-backup (1) balance-xor (2)
+#                       broadcast   (3) 802.3ad       (4) balance-tlb (5)
+#                       balance-alb (6)
+nmcli con add type bond ifname <bondname> mode <mode> miimon <num>
+nmcli con mod <bondname> ip4 <IP>/<nw> -gw4 <GW>
+nmcli con mod <bondname> ipv4.dns "<dns1> <dns2>" ipv4.dns-search "domain" mtu <mtu>
+nmcli con add type bond-slave ifname <nic1> master <bondname>
+nmcli con add type bond-slave ifname <nic2> master <bondname>
+nmcli -p con up "<bondname>"
+
+# the "Old Way":
+cd /etc/sysconfig/network-scripts
+# for each bonded interface, make it look like:
+DEVICE=eth0
+BOOTPROTO=none
+ONBOOT=yes
+MASTER=bond0
+SLAVE=yes
+USERCTL=no
+HOTPLUG=no
+NM_CONTROLLED=no
+# change MASTER line as needed
+# the ifcfg-bondX needs:
+cat >>ifcfg-bond0 <<EOF
+DEVICE=bond0
+BOOTPROTO=none
+ONBOOT=yes
+IPADDR=
+NETMASK=255.255.255.0
+USERCTL=no
+NM_CONTROLLED=no
+BONDING_OPTS="mode=0 miimon=100"
+MTU=9000
+EOF
+# change DEVICE, IPADDR, and GATEWAY as needed
+service network restart
+#  end set network/bonding #####################################################
+################################################################################
+#    USER LOGIN POLICY MANAGEMENT ##############################################
+#  Set password requirements
+
+# NOTE: these tend to be very site specific
+# disable root login
+/bin/sed 's/PasswordAuthentication yes/PasswordAuthentication no/g' /etc/ssh/sshd_config
+service sshd restart
+
+#  Set Password aging
+vi /etc/login.defs
+PASS_MAX_DAYS   90
+PASS_MIN_DAYS   0
+PASS_MIN_LEN    8
+PASS_WARN_AGE   7
+
+#  Set Inactive
+vi /etc/default/useradd
+INACTIVE=7
+
+#  end set USER LOGIN POLICY ###################################################
+################################################################################
+#    USER/GROUP ADDS ###########################################################
+# standard local groups and users
+
+#    end user/group adds #######################################################
+################################################################################
+#   set root ###################################################################
+passwd root
+
+cd ; mkdir .ssh ; chmod 700 .ssh
+cat >>.ssh/authorized_keys <<EOF
+EOF
+chmod 600 .ssh/authorized_keys
+
+#  end set root ################################################################
+################################################################################
+#   install ULN/RHN ############################################################
+# Red Hat has deprecated RHN -- use Subscription Manager
+# if (you need to lock kernel release)
+# { try to push back
+# } else {
+#vi /etc/yum.conf
+# add:
+#exclude=kernel*,redhat-release*,oracle-release*
+# } endif
+# NOTE: this is not 100% ideal, as it stops kernel-related bug/security
+#    patches within the minor release cycle...
+
+#RHEL - need rhn username/password
+rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+rhnreg_ks --username="" --password="" --profilename="`hostname`" [--force]
+# Manual method of needed
+#rhn_register
+
+#ULN - need csi, oracle username/password
+rhnreg_ks --csi="" --username="" --password="" --profilename="`hostname`" [--force]
+# Manual method if needed
+#uln_register
+
+#Red Had Subscription Manager
+# if theres a satserv, may need "--serverurl=<satserv>"
+subscription-manager register --username="" --password="" --name="`hostname`" [--auto-attach] [--force]
+
+# Common packages which are useful to have installed on most systems
+yum -y install dstat git gpm hwloc iotop iptraf-ng lsof mtr net-snmp ps_mem 
+yum -y install psmisc sg3_utils snappy strace systemtap tmux util-linux yum-utils
+# These require EPEL - To manually add EPEL repo to a system NOTE OS VERSION NUMBER
+#  yum -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+yum -y install atop autojump autojump-zsh bmon git-all htop ifstat ifstatus iftop
+yum -y install ibmonitor jnettop mosh multitail ncdu nethogs ntop sysdig tcptrack
+yum -y install inxi glances
+# On physical
+yum -y install cpupowerutils powertop i7z
+
+chkconfig gpm on
+yum -y update
+
+# If there are problems with that, try:
+package-cleanup --problems
+package-cleanup --dupes
+rpm -Va --nofiles --nodigest
+yum update
+
+# If still problems, try:
+yum --skip-broken update
+
+# Clean up after yourself!
+yum clean all
+
+# It wouldn't hurt to take a reboot at this point...
+#  end install sat server ######################################################
+################################################################################
+#  various dump/crash settings #################################################
+
+# change kdump to use snappy compression instead of lzo (faster)
+/bin/sed -i 's/makedumpfile -[cl]/makedumpfile -p/g' /etc/kdump.conf
+
+# Ensure abrt is installed and ready
+yum install abrt-addon-ccpp abrt-addon-kerneloops abrt-addon-python abrt-cli
+
+# Dump all core files to a specific place
+mkdir /var/crash/cores
+cat >>/etc/abrt/abrt.conf <<EOF
+DumpLocation = /var/crash/cores
+EOF
+cat >>/etc/sysctl.d/91-abrt.conf <<EOF
+# Keep core files in one spot
+kernel.core_pattern = |/usr/libexec/abrt-hook-ccpp %s %c %p %u %g %t %e %h
+EOF
+sed -i 's/ProcessUnpackaged = no/ProcessUnpackaged = yes/' /etc/abrt/abrt-action-save-package-data.conf
+sed -i 's/OpenGPGCheck = yes/OpenGPGCheck = no/' /etc/abrt/abrt-action-save-package-data.conf
+
+#  end various server ##########################################################
+################################################################################
+#  /etc/ntp.conf settings ######################################################
+# NOTE: Pre-RHEL 7
+# note: iburst should only be used for internal networks
+
+cat >/etc/ntp.conf <<EOF
+restrict default kod nomodify notrap nopeer noquery
+restrict -6 default kod nomodify notrap nopeer noquery
+server SERVER1 iburst
+server SERVER2 iburst
+EOF
+
+chkconfig ntpd on
+
+# RHEL7
+# Other than server(s), not much configuration is needed
+systemctl enable chronyd.service && systemctl start chronyd.service
+#  end ntp settings ############################################################
+################################################################################
+#  vmware config ###################################################################
+# Add all three types of disk controllers to boot kernel:
+dracut -H -f --add-drivers "mptbase mptscsih mptspi mptsas"
+
+# Install vmware tools
+# ** Not needed for RHEL7 **
+
+cd /etc/pki/rpm-gpg
+rpm --import http://packages.vmware.com/tools/keys/VMWARE-PACKAGING-GPG-DSA-KEY.pub
+rpm --import http://packages.vmware.com/tools/keys/VMWARE-PACKAGING-GPG-RSA-KEY.pub
+
+### NOTE: check ESX version ###
+cat >/etc/yum.repos.d/vmware-tools.repo <<EOF
+[vmware-tools]
+name=VMware Tools 5.0u1 - rhel6 \$basearch
+#baseurl=http://packages.vmware.com/tools/esx/5.0u1/rhel6/\$basearch/
+baseurl=http://packages.vmware.com/tools/esx/latest/rhel6/\$basearch/
+enabled=1
+gpgcheck=1
+protect=0
+priority=50
+EOF
+
+if [[ `uname -r | grep PAE` ]]; then
+    yum install vmware-tools-esx-kmods-PAE vmware-tools-esx kmod-vmware-tools-pvscsi kmod-vmware-tools-vmxnet3
+else
+    yum install vmware-tools-esx-kmods vmware-tools-esx kmod-vmware-tools-pvscsi kmod-vmware-tools-vmxnet3
+fi
+
+#check verion of VMWare
+vmware-toolbox-cmd -v
+
+#  end vmware settings ############################################################
+################################################################################
+#  vm config ###################################################################
+# common kernel settings for VMs
+cat >>/etc/sysctl.d/92-vmsettings.conf <<EOF
+# Minimal preemption granularity for CPU-bound tasks:
+# (default: 1 msec#  (1 + ilog(ncpus)), units: nanoseconds)
+kernel.sched_min_granularity_ns = 10000000
+
+# SCHED_OTHER wake-up granularity.
+# (default: 1 msec#  (1 + ilog(ncpus)), units: nanoseconds)
+#
+# This option delays the preemption effects of decoupled workloads & reduces
+#   their over-scheduling. Synchronous workloads will still have immediate
+#   wakeup/sleep latencies.
+kernel.sched_wakeup_granularity_ns = 15000000
+
+# Filesystem I/O is usually much more efficient than swapping, so try to keep
+#   swapping low. It's usually safe to go even lower than this on systems with
+#   server-grade storage.
+# 0   avoid swapping processes out of physical memory as long as possible
+# 100 aggressively swap processes out of physical memory
+# Reduce swappiness on VMs to minimum (tuned 'virtual-guest' profile: 30)
+#   (DO NOT SET TO 0 ON RHEL 6.8+; esp. w/mysql installed)
+vm.swappiness = 1
+
+# If workload mostly uses anonymous memory & it hits this limit, the entire
+#   working set is buffered for I/O, & any more write buffering would require
+#   swapping, so it's time to throttle writes until I/O can catch up. Workloads
+#   that mostly use file mappings may be able to use even higher values.
+# Generator of dirty data starts writeback at this percentage
+#   (default: 20%, tuned 'virtual-guest' profile: 30%)
+vm.dirty_ratio = 10
+
+# Start background writeback (via writeback threads) at this percentage
+#   (default: 10%, tuned 'virtual-guest' profile: 10%)
+vm.dirty_background_ratio = 5
+
+# Increase net.core buffers to give apps max space
+net.core.wmem_max = 4194304
+net.core.rmem_max = 4194304
+EOF
+
+# Let's re-write fstrim.timer, easier then seding it
+cat >/usr/lib/systemd/system/fstrim.timer <<EOF
+[Unit]
+Description=Discard unused blocks on boot & once a week
+Documentation=man:fstrim
+
+[Timer]
+OnBootSec=15min
+OnUnitActiveSec=1w
+AccuracySec=1h
+Persistent=true
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+# sysstat info is skewed inside a vm, disable it
+chkconfig sysstat off
+
+#On RHEL7 VM's even more to disable:
+systemctl stop smartd.service && systemctl disable smartd.service
+systemctl stop sysstat.service && systemctl disable sysstat.service
+systemctl stop multipathd.service && systemctl disable multipathd.service
+systemctl stop mdmonitor.service && systemctl disable mdmonitor.service
+systemctl stop avahi-daemon.service && systemctl disable avahi-daemon.service
+systemctl stop avahi-daemon.socket && systemctl disable avahi-daemon.socket
+
+#On RHEL7 VM's, lets enable:
+#systemctl enable fstrim.service && systemctl start fstrim.service
+# for fstrim, you should only need the timer
+systemctl enable fstrim.timer && systemctl start fstrim.timer
+
+# add to /etc/cron.daily scripts which could generate a lot of i/o
+for f in `ls /etc/cron.daily`; do
+    sed -i '2i\# Sleep random amount of time to avoid spamming VM host system\' /etc/cron.daily/$f
+    sed -i '3i\/bin/sleep $((RANDOM/109))\' /etc/cron.daily/$f
+done
+
+# comment out crontab entries
+sed -i -e 's_.*_#&_' /etc/cron.d/sysstat
+# enable discards for LVM -- basically treat disks as SSDs
+# sed -i 's/issue_discards\ =\ 1/issue_discards\ =\ 0/g' /etc/lvm/lvm.conf && dracut -f
+#Actually, don't do that. Instead, enable fstrim to run periodically (see above)
+
+# add elevator=noop to kernel boot paramater, done two different ways to ensure persistance
+grubby --update-kernel=DEFAULT --args="elevator=noop"
+sed -i "s/\"$/ elevator=noop\"/" /etc/default/grub
+
+# add 'noatime' to all filesystems except /var and /tmp, use 'relatime' for them
+vi /etc/fstab
+
+#  end vm config ###############################################################
+################################################################################
+#  more sysctl settings ########################################################
+# These apply to both VM and physical. Be sure to review list before using
+cat >>/etc/sysctl.d/90-override.conf <<EOF
+# Suggested value for pid_max is 1024 * <# of cpu cores/threads in system>
+#   (soft) Min 32768 (upto 32 CPUs); 65536 (64 CPUs); (hard) Max 4194304 (4096 CPUs)
+#kernel.pid_max = 65536
+
+# controls the tendency of the kernel to reclaim the memory which is used for caching
+vm.vfs_cache_pressure = 50
+
+# Randomized heap & virtual memory placement
+kernel.randomize_va_space = 2
+
+# Disable ipv6 -- if not, make sure you also set ipv6 options in following net.*
+net.ipv6.conf.all.disable_ipv6 = 1
+
+# Log suspicious packets to kernel log
+net.ipv4.conf.all.log_martians = 1
+net.ipv4.conf.default.log_martians = 1
+
+#### Unless system is a router, disable related functions
+net.ipv4.ip_forward = 0
+net.ipv4.conf.all.send_redirects = 0
+net.ipv4.conf.default.send_redirects = 0
+# Disable ICMP redirect acceptance (prevents some types of MITM attacks)
+net.ipv4.conf.all.accept_redirects = 0
+net.ipv4.conf.default.accept_redirects = 0
+# Disable secure ICMP redirect acceptance (accept only for gateways listed in default)
+net.ipv4.conf.all.secure_redirects = 0
+net.ipv4.conf.default.secure_redirects = 0
+#### END router settings
+
+# In most cases we can ignore broadcast requests
+net.ipv4.icmp_echo_ignore_broadcasts = 1
+# Turn off potentially noisy log warnings from routers which violate RFC1122
+net.ipv4.icmp_ignore_bogus_error_responses = 1
+# Enable system SYN Cookies for validating authenticity connection request
+net.ipv4.tcp_syncookies = 1
+EOF
+
+#  end more sysctl settings
+################################################################################
+#  physical config #############################################################
+# This needed for HP SPP on RHEL6
+yum -y install rpm-build rpm-devel tcl expect gcc cpp glibc-devel lm_sensors compat-libstdc++-296 redhat-rpm-config libuuid.i686 freetype.i686 libSM.i686 libICE.i686 libXi.i686 libX11.i686 libXext.i686 libxcb.i686 libXau.i686 libXrender.i686 libXrandr.i686 libXfixes.i686 libXcursor.i686 fontconfig.i686 expat.i686 zlib.i686 libstdc++.i686
+# install SPP on HP ssytems, cd into directory
+./hpsum /silent /use_web
+## !!!NOTE: blades may helpfully offer to update OA firmware, 
+## !!!!DO NOT DO THIS!!!!
+
+# On *multi-socket* systems, you *may* want to enable numad
+yum -y install numad numactl
+cat >>/etc/fstab <<EOF
+cgroup			/cgroup/cpuset		cgroup	cpuset		0 1
+EOF
+mkdir -p /cgroup/cpuset ; mount /cgroup/cpuset
+
+chkconfig numad on && service numad start
+# - or - 
+systemctl enable numad.service && systemctl start numad.service
+
+#  end physical config
+################################################################################
+#   set inittab ################################################################
+vi /etc/inittab
+# change from default of 5 to 3
+#  end set inittab #############################################################
+################################################################################
+#  motd config
+cat >>/etc/motd <<EOF
+Good day to you!
+EOF
+#  end motd config
+################################################################################
+#  boot config
+# Turn off graphical Plymouth on VMs - we do this three different ways to ensure
+#   persistance
+grubby --update-kernel=ALL --remove-args=rhgb
+sed -i "s/rhgb//" /etc/default/grub
+plymouth-set-default-theme -R details
+#  end boot config
+################################################################################
+#
+#         Do a final reboot!
+#
+################################################################################
+#  Disk config notes ###########################################################
+# device can be /dev/sdb or /dev/cciss/c0d1, or something else
+# to find one:
+lsblk
+
+pvcreate --metadatacopies 2 /dev/DEVICE
+vgcreate -s 32M datavol /dev/DEVICE
+# It is completely valid to use full disk with pv rather then partition
+
+## Make logical volumes
+# change as needed
+VG=vg01
+SIZE=10G
+LV=lv00
+MOUNT=/var/lib/cassandra/data
+
+lvcreate -L $SIZE -n $LV $VG
+#lvcreate -l 100%FREE -n $LV $VG
+/dev/datavol/mysql
+mkfs.ext4 /dev/$VG/$LV
+cat >>/etc/fstab <<EOF
+/dev/$VG/$LV $MOUNT                    ext4    defaults        1 2
+EOF
+## OR ##
+mkfs.xfs /dev/$VG/$LV
+cat >>/etc/fstab <<EOF
+/dev/$VG/$LV $MOUNT                    xfs    defaults        1 2
+EOF
+
+mkdir -p $MOUNT
+mount $MOUNT
+
+######## NOTE: btrfs is NOT ready for prime-time####
+## OR ##
+#mkfs.btrfs /dev/$VG/$LV
+#cat >>/etc/fstab <<EOF
+#/dev/$VG/$LV $MOUNT                    btrfs    defaults        1 2
+#EOF
+#  end Disk config notes #######################################################
+################################################################################
+#  multipath notes #############################################################
+
+# RHEL6 does not install multipath by default:
+yum install device-mapper-multipath
+/sbin/mpathconf --enable
+
+# the defaults block should look like:
+defaults {
+  udev_dir         /dev
+  polling_interval 10
+  path_selector    "round-robin 0"
+  getuid_callout   "/sbin/scsi_id -g -u -s /block/%n"
+  path_checker     tur
+  rr_min_io        100
+  rr_weight        uniform
+  failback         immediate
+  no_path_retry    12
+  path_grouping_policy  failover
+  user_friendly_names   yes
+}
+
+# Some systems may need EMC device added:
+devices{
+  device {
+    vendor     "EMC"
+    product    "SYMMETRIX"
+    path_grouping_policy	multibus
+    getuid_callout    "/sbin/scsi_id -g -u -s /block/%n"
+    path_selector     "round-robin 0"
+    rr_weight         uniform
+    path_checker      tur
+    hardware_handler  "0"
+    failback          immediate
+    no_path_retry     18
+    rr_min_io         100
+  }
+}
+# if multipath, replace black list in /etc/multipath.conf with:
+blacklist {
+  devnode "^(ram|raw|loop|fd|md|dm-|sr|scd|st)[0-9]*"
+  devnode "^hd[a-z][[0-9]*]"
+  devnode "^cciss!c[0-9]d[0-9]*"
+}
+
+# You can (should?) add aliases for SAN devices, especially shared ones
+# the first is example of private disk for a volume group
+# the second a shared asm disk
+# this gets added to "multipaths {}" section:
+
+         multipath {
+	         wwid     360000970000192602381533030393739
+	         alias    vgrp01pv0
+	    }
+         multipath {
+	         wwid     360000970000192600769533030314242
+	         alias    oraData1s
+	    }
+
+# finally, enable it all:
+chkconfig multipathd on
+service multipathd start
+multipath -ll
+
+#rescaning for LUNs, this is from the sg3_utils package:
+rescan-scsi-bus.sh
+#  end multipath notes
+################################################################################
+# Files which need changing after 'deploy from template": ######################
+vi /etc/sysconfig/network
+# don't forget to change the MAC address!!
+vi /etc/sysconfig/network-scripts/*eth0
+vi /etc/udev/rules.d/70-persistent-net.rules
+# reboot
+# need to re-register with RHN under new name
+rhnreg_ks  --username="" --password="" --profilename="`hostname`" --force
+## reg sys w/aap sat-proxy #####################################################
+rhnreg_ks --activationkey=2-rhel-dev  --force --profilename="`hostname -s`" --serverUrl=http://<satserverfqdn>/XMLRPC
+rhnreg_ks --activationkey=2-rhel-qa   --force --profilename="`hostname -s`" --serverUrl=http://<satserverfqdn>/XMLRPC
+rhnreg_ks --activationkey=2-rhel-prod --force --profilename="`hostname -s`" --serverUrl=http://<satserverfqdn>/XMLRPC
+
+yum -y update
+################################################################################
+
+
+
+
+

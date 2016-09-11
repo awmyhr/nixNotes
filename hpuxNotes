@@ -1,0 +1,198 @@
+#!/bin/bash NOT A REAL SHELL SCRIPT!
+# This is a cut'n'paste scriptlet
+# be sure to read & understand what you're cutting & pasting!
+#
+# ISO date stamp
+`date +%Y%m%d-%H%M`
+
+# copy an entire filesystem (hp-ux only?):
+fbackup -i home/ -f - | (cd /newu01; frecover -Xrf -)
+# replace home/ with the right directory.
+#  I was replicating /u01 at the time so what I did
+#  to avoid nesting /u01 into /newu01/u01 I cd to /u01
+#  the did the fbackup from there.
+
+# some good stuff:
+# http://networktechnologist.com/tips-hpux.html
+# http://temp.sinhasscom.officelive.com/HP_Tips.aspx
+# http://www.hpuxtips.es
+# some vPar stuff:
+# http://www.informit.com/articles/article.aspx?p=26241&seqNum=8
+
+## general machine information, inc. serial number
+
+/usr/contrib/bin/machinfo
+/opt/ignite/bin/print_manifest
+# also dmesg & swapinfo
+# memory free:
+swapinfo -tam
+
+## get serial number
+echo "map ; sel dev 1 ; il" | cstm | grep "System Serial"
+
+# list disk & scan for new disk
+ioscan -fnNC disk
+
+# details about disk
+scsimgr -p get_attr all_lun -a device_file -a serial_number
+
+# shows mapping between legacy & agile naming model:
+ioscan -m dsf
+
+# copy dir tree
+fbackup -i home/ -f - | (cd /newu01; frecover -Xrf -)
+
+#finds the controllers name
+/usr/sbin/ioscan -kfnd ciss
+#Gives controller information
+/usr/sbin/sautil /dev/ciss0
+
+# on HPUX 11iv3 in TCB mode (Trusted Computing Base),
+#  rstrpw
+#  No aging is present if the following 4 database parameters are
+#           all zero: u_minchg, u_exp, u_life, u_pw_expire_warning.
+/usr/lbin/modprpw -m field=value,field=value,... root # change defaults
+/usr/lbin/modprpw -k root     #unlock/enable user's account
+/usr/lbin/modprpw -v root
+/usr/lbin/getprpw
+# remove root's password history
+echo "" >/tcb/files/auth/system/pwhist/pwhist_0
+
+# (TCB mode can be identified by the existance of the /tcb directory)
+#  on NEW 11iv3 servers, which use a different security model,
+#  the command is :-
+userdbset -d -u root auth_failures <- to reset
+userdbget -i -u root <- to check if locked
+
+# ...and also, to check for disabled in TCB mode,
+/usr/lbin/getprpw -m lockout USERNAME
+# if any of the result is "1", then it is locked
+
+# cron.allow is in a funky place on hp-ux:
+/usr/lib/cron/cron.allow
+
+# network config is kept here:
+/etc/rc.config.d/netconf
+
+#For 11.11, use lanadmin/lanscan/linkloop
+# Here is a couple equivelants of 'ifconfig -a' for the older hp-ux version.
+for i in `netstat -rn |grep lan |cut -c55-59 |sort |uniq`; do ifconfig $i; done
+for i in `lanscan -i | awk '{print $1}'` ; do ifconfig $i ; done
+
+#For newer lanadmin/lanscan/linkloop are deprecated, use nwmgr
+# To see the list of subsystems supported by nwmgr on the system, enter:
+nwmgr -h -S all
+# list all network interfaces
+nwmgr --get
+# list bond info
+nwmgr -g -S apa
+
+# flash/turn off attention LEDs
+
+fruled
+
+parstatus(1), frupower(1M), parcreate(1M), parmgr(1M), parmodify(1M),
+      parremove(1M), parunlock(1M), partition
+
+
+# Check if gsp is functional
+
+stty +queryGSP < /dev/GSPdiag1
+
+# Restart gsp (*shouldn't* restart server)
+stty +resetGSP < /dev/GSPdiag1
+
+#Interupting the boot process:
+#    Configuration Menu
+#    Information Menu
+#    Service Menu
+
+# GSP Mode
+#    From the console hit <ctrl><b>
+#    Hit <Enter> at the GSP console login (default is no password)
+#    Now low level commands can be entered
+#    ps  --> power status
+
+
+# Veritas & Service Guard schtuff
+# also see http://blogs.neuronring.com/blogs/computer/unix-and-linux/hp-serviceguard-configuration-serviceguard-cluster-commands-cmviewcl-cmhaltpkg-cmrunpkg/
+# SG files
+/etc/cmcluster/configs/cmclfstab
+/etc/cmcluster/<ClusterName>.ascii
+/etc/cmcluster/cmclconfig
+/etc/cmcluster/<PackageName>/<PackageName>.conf
+/etc/cmcluster/<PackageName>/<PackageName>.cntl
+/etc/cmcluster/aersvpkg/debug.aersvpkg
+
+# Service Guard Commands
+cmruncl -v                              #start entire cluster
+cmhaltcl -v                             #stop entire cluster
+cmviewcl -v                             #check status of cluster
+cmrunnode -v [NODENAME]                 #start a single node
+cmhaltnode -f -v [NODENAME]             #stop a node
+cmgetconf -C [CONFIGNAME]               #get current configuration
+cmrunpkg -n [NODENAME] [PACKAGENAME]    #start package on node
+cmmodpkg -e [PACKAGENAME]               #enable switching
+cmhaltpkg [PACKAGENAME]                 #stop package
+
+#debug file
+/etc/cmcluster/<pkgname>/<pkgname>.debug
+
+#    cluster filesystem status
+cfscluster status
+#    find master node
+vxdctl -c mode
+#    find cfs master node
+fsclustadm -v showprimary [mount]
+
+### Proc pinning:
+psrset -c 2 ; psrset -a 1 2 ; ps -fu root | grep -i grid | grep -v grep
+psrset -b 1 <PIDS of all grid processes>
+
+# to extend vxfs filesystem:
+#    NOTE:  extendfs will NOT work with Online JFS, you must use fsadm
+#    NOTE:  new size of the filesystem = <# of LEs> * <LE Size in MB> * 1024
+#    NOTE:  If lvextend -L was used simply multipy size in MB by 1024
+#    NOTE:  If this FAILS with errno 28, then the filesystem is 100% full and must be reduced to less than 100%.
+lvextend -L <size in mb> /path/to/disk
+fsadm -F vxfs -b <new size of fs in K> /mount/point
+
+# reaching an HP-UX VM:
+hpvmconsole -P <hostname>
+
+# SMH page
+http://{server}:2301
+
+# package management
+# install package from depot file:
+swinstall -s </full/path/to/packagename-versionstring.depot> packagename
+# remove package
+swremove packagename
+# List patches:
+swlist -l product
+
+# Install depothelper
+mkdir /tools
+mount -F nfs rtpna02:/vol/unixtools /tools
+swinstall -s /tools/hp-ux/depothelper-2.00-ia64-11.31.depot depothelper
+/usr/local/bin/depothelper tcpdump
+cd ; umount /tools
+
+# Remember these
+diskinfo
+diskowner
+
+#CPU binding
+
+psrset -c 2
+psrset -a 1 2
+ps -fu root | grep -i grid
+ps -fu oracle | grep -i ocssd.bin
+psrset -b 1 {PID list}
+
+for i in $( psrset -q | grep "PSET  2" | awk '{print $2}' );do ps -ef | grep $i | grep -v grep;done
+
+
+
+
+

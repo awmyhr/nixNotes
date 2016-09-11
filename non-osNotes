@@ -1,0 +1,80 @@
+#!/bin/bash NOT A REAL SHELL SCRIPT!
+# This is a cut'n'paste scriptlet
+# be sure to read & understand what you're cutting & pasting!
+#
+# ISO date stamp
+`date +%Y%m%d-%H%M`
+
+################################################################################
+# Edit remotefile on remoteserver (relative to login user homedir)
+#   <remoteserver> can be in user@hostname style
+vim rsync://<remoteserver>/<remotefile>
+# User-level mount of remotedirectory on remoteserver (generally temporary)
+sshfs <remoteserver>:<path/to/remotedirectory> <mountpoint>
+# Unmount the above:
+fusermount -u <mountpoint>
+# If rsync/scp not available, use tar and ssh with pipes
+#   copy to remoteserver 
+tar -cpf - <directory/filelist> | ssh <remoteserver> "cd <targetpath> && tar -xvpf -"
+#   (some versions of tar have a -C option)
+tar -cpf - <directory/filelist> | ssh <remoteserver> tar -C <targetpath> -xpf -
+#   copy from remoteserver to current directory
+ssh <remoteserver> 'tar czf <directory/filelist> -' | tar xzf -
+#
+################################################################################
+# some ways to get list of make targets
+make --print-data-base --dry-run
+make -qp | awk -F':' '/^[a-zA-Z0-9][^$#\/\t=]*:([^=]|$)/ {split($1,A,/ /);for(i in A)print A[i]}'
+make -pn | sed -rn '/^[^# \t\.%].*:[^=]?/p'
+
+################################################################################
+# crudini - script changes to ini-style config files
+#     Can be used to get values from non-ini-sytle files, just use DEFAULT section:
+crudini --get <filename> DEFAULT <value>
+#     Can be used to set values, but must remember to remove section head after:
+sed -i "s/\[DEFAULT\]//g" <filename>
+
+################################################################################
+#SSL stuff
+# Create a self-signed OpenSSL Cert:
+openssl genrsa -out bogus.key 1024
+openssl req -new -key bogus.key -out bogus.csr
+openssl x509 -req -days 365 -in bogus.csr -signkey bogus.key -out bogus.crt
+
+# -- or -- #
+openssl req -x509 -newkey rs:1024 -keyout my.key -out my.crt -days 2365 -nodes
+
+# Read a sefl-signed cert:
+openssl x509 -in bogus.pem -inform pem -noout -text
+
+# get fingerprint of a public key file 
+ssh-keygen -lf <filename>
+
+# get server cert thumbprint
+echo ""|openssl s_client -connect <hostname>:443 2> /dev/null 1> /tmp/cert
+openssl x509 -in /tmp/cert -fingerprint -sha1 -noout
+
+# get key fingerprint
+gpg --with-fingerprint keyname
+
+
+################################################################################
+## RegEx to match common RPM name/version strings:
+^(\w+-?\w+\+*)-(\d+)\.?(\d+\w*)-?\.?(\d+\w*)(.*)
+
+# This may be a bit better, untested:
+^(\w+(-?\w+)*\+*)-(\d+)\.?(\d+\w*)-?\.?(\d+\w*)(.*)
+
+################################################################################
+##  Wireshark stuff
+# capture interface (eth0) for duration (10 seconds) and report info on port (80)
+tshark -f 'tcp port 80 and tcp[tcpflags] & (tcp-syn) !=0 and tcp[tcpflags] & (tcp-ack) = 0' -n -q -z io,stat,1 -i eth0 -a "duration:10"
+################################################################################
+#
+#
+#
+################################################################################
+
+
+
+

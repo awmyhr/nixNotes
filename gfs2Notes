@@ -1,0 +1,33 @@
+#!/bin/bash NOT A REAL SHELL SCRIPT!
+# This is a cut'n'paste scriptlet
+# be sure to read & understand what you're cutting & pasting!
+#
+# ISO date stamp
+`date +%Y%m%d-%H%M`
+
+################################################################################
+# FYI:
+# 	Is live migration supported for VMs that are members of a RHEL cluster?
+# 	(no) https://access.redhat.com/solutions/202123
+#	
+# Cost associated with using GFS2
+# Subscription required to utilize it
+# 	What subscriptions are required for RHEL High Availability and/or Resilient Storage clusters?
+# 	(Resilient Storage, which includes HA) https://access.redhat.com/solutions/55242
+#
+# Restrictions in a virtual environment
+# 	Are VMware VMDK disk images a supported shared storage method in Red Hat Enterprise Linux High Availability Cluster?
+# 	(yes) https://access.redhat.com/solutions/158873
+# 	(vmdks can be used) https://access.redhat.com/articles/29440
+#	
+################################################################################
+#How to enable/install and configure/use
+# See the rhelhaNotes doc upto and including the point where the stonith is added
+# Each node should have access to a RHEL Resilient Storage repository, then install
+yum install lvm2-cluster gfs2-utils
+
+################################################################################
+
+
+
+

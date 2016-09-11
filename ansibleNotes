@@ -1,0 +1,78 @@
+#!/bin/bash NOT A REAL SHELL SCRIPT!
+# This is a cut'n'paste scriptlet
+# be sure to read & understand what you're cutting & pasting!
+#
+# ISO date stamp
+`date +%Y%m%d-%H%M`
+###############################################################################
+#Configuration Locations - first found ########################################
+#   Contents of ${ANSIBLE_CONFIG}
+#   ./ansible.cfg
+#   ~/.ansible.cfg
+#   /etc/ansible/ansible.cfg
+###############################################################################
+#Add-hoc commands
+# test connection
+ansible all -m ping
+# Common flags:
+#	-o            print each result on one line
+#	-k 	          ask for password (i.e., don't use key-based)
+#	-b, --become  run operation using sudo (default, see become-method) (also -s, --sudo [deprecated])
+#   -C, --check   don't make changes, test what would be changed
+#   -f <num>      run <num> parallel processes (default 5)
+#	-u <user>     log into servers as <user>
+#   -B <num>      run in background, kill task after <num> seconds
+#   -t <dir>      save contents in this output <dir>, results in file named for each host
+#   --become-method=BECOME_METHOD
+#                 Privilege escalation method to use (default=sudo), valid choices: [ sudo | su |
+#                   pbrun | pfexec | runas | doas | dzdo ]
+#
+# Execute arbitrary commands, no -m will imply -m command
+ansible <hostpattern> -a "<command>"
+ansible <hostpattern> -m command -a "<command>"
+# Execute arbitrary commands in a shell environment
+ansible <hostpattern> -m shell -a "<command>"
+# install/remove a package via yum
+ansible <hostpattern> -m yum -a "name=<package> state=[present|absent]" --sudo
+#
+###############################################################################
+#Copy file to hosts
+ansible <hostpattern> -m copy -a "src=</path/to/src/file> dest=</path/to/dest/file> mode=755"
+#Copy file from hosts
+ansible <hostpattern> -m fetch -a "src=</path/to/src/file> dest=</path/to/dest/directory>"
+#
+###############################################################################
+#Get info on a host
+ansible <host> -m setup
+# filter keys
+ansible <host> -m setup -a 'filter=<keypattern>'
+###############################################################################
+#Vault commands [manage encrypted ansible vars files (YAML)]
+ansible-vault encrypt <file>
+# when running a command w/encrypted file, add flag --ask-vault-pass
+#
+###############################################################################
+#Doc commands [show documentation on Ansible modules]
+ansible-doc [-M <modulepath>] <modulename>
+#
+###############################################################################
+#Pull commands [pull playbooks from VCS server and run them using this machine as the target.]
+ansible-pull
+#
+###############################################################################
+#Galaxy commands [manage roles using galaxy.ansible.com (or file)]
+ansible-galaxy
+#
+###############################################################################
+#Playbook Commands
+# Syntax check
+ansible-playbook --syntax-check <pbfile>
+# List hosts or tasks
+ansible-playbook <pbfile> --list-[hosts|tasks]
+# Run on all hosts defined 
+#   test run add -C
+#   dry run add -C -D
+#   single host add -l <hostname>
+ansible-playbook <pbfile>
+#
+###############################################################################

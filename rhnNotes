@@ -1,0 +1,51 @@
+#!/bin/bash NOT A REAL SHELL SCRIPT!
+# This is a cut'n'paste scriptlet
+# be sure to read & understand what you're cutting & pasting!
+#
+# ISO date stamp
+`date +%Y%m%d-%H%M`
+##  Common naming scheme for channels:
+
+Channel Name:<env> RHEL6/x86_64 <component> <release>
+Channel Label: <env>-6-64-<component>
+Summary: <source> <ext component>
+Description: EST <YYYY-MM-DD>
+             Updated <YYYY-MM-DD>
+
+##  Some examples:
+
+Dev RHEL6/x86_64 RH Base 2014/Q2
+dev-6-64-base
+RedHat Base OS
+EST 20140428
+Updated 20140428
+
+Dev RHEL6/x86_64 RH Debug 2014/Q2
+dev-6-64-debug
+RedHat Debug Files
+
+Dev RHEL6/x86_64 RH Optional 2014/Q2
+dev-6-64-opt
+RedHat Optional Server Components
+
+Dev RHEL6/x86_64 RH Supplementary 2014/Q2
+dev-6-64-sup
+RedHat Supplementary Server Components
+
+Dev RHEL6/x86_64 RH Oracle Java 2014/Q2
+dev-6-64-ojava
+RedHat Oracle Java from RH
+
+Dev RHEL6/x86_64 EPEL 2014/Q2
+dev-6-64-epel
+Fedora Extra Packages for Enterprise Linux
+
+
+The Dev channels should be cloned from the RHEL channels
+The QA channels should be cloned from the Dev channels
+The Prod channels should be cloned from the QA channels
+
+To manage channels for a system from the commandline:
+rhn-channel --list
+rhn-channel --add -c <channelname>
+rhn-channel --remove -c <channelname>

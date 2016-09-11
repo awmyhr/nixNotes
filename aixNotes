@@ -1,0 +1,468 @@
+#!/bin/bash NOT A REAL SHELL SCRIPT!
+# This is a cut'n'paste scriptlet
+# be sure to read & understand what you're cutting & pasting!
+#
+# This mostly comes from: http://www.tablespace.net/quicksheet/
+#                       Created by: William Favorite (wfavorite@tablespace.net)
+#
+# For TONS more info, check: http://aix4admins.blogspot.com/
+#
+# ISO date stamp
+`date +%Y%m%d-%H%M`
+
+#change aix default password hash to sha512
+chsec -f /etc/security/login.cfg -s usw -a pwd_algorithm=ssha512
+
+################################################################################
+## Filesystems
+# Remove mount point entry and the LV for /mymount
+rmfs /mymount
+   #Add -r to remove mount point
+#Grow the /var ﬁlesystem by 1 Gig
+chfs -a size=+1G /var
+#Grow the /var ﬁlesystem to 1 Gig
+chfs -a size=1G /var
+#Find the ﬁle usage on a ﬁlesystem
+du -smx /
+#List ﬁlesystems in a grep-able format
+lsfs
+#Get extended information about the /home ﬁlesystem
+lsfs -q /home
+#Create a log device on datavg VG
+mklv -t jfs2log -y datalog1 datavg 1
+#Format the log device just created
+logform /dev/datalog1
+
+################################################################################
+## Kernel Tuning
+#no is used in the following examples. vmo, no, nfso, ioo, raso, and
+#   schedo all use similar syntax. lvmo uses diﬀerent syntax.
+#Reset all networking tunables to the default values
+no -D   #Changed values will be listed
+#List all networking tunables
+no -a
+#Set a tunable temporarily (until reboot)
+no -o use isno=1
+#Set a tunable at next reboot
+no -r -o use isno=1
+#Set current value of tunable as well as reboot
+no -p -o use isno=1
+#List all settings, defaults, min, max, and next boot values
+no -L
+#List all sys0 tunables
+lsattr -El sys0
+#Get information on the minperm% vmo tunable
+vmo -h minperm%
+#Change the maximum number of user processes to 2048
+chdev -l sys0 -a maxuproc=2048
+#Check to see if SMT is enabled
+smtctl
+#Directory containing tunables settings
+/etc/tunables/
+
+################################################################################
+## ODM
+#Query CuDv for a speciﬁc item
+odmget -q name=hdisk0 CuDv
+#Query CuDv using the “like” syntax
+odmget -q "name like hdisk?" CuDv
+#Query CuDv using a complex query
+odmget -q "name like hdisk? and parent like vscsi?" CuDv
+
+################################################################################
+## Devices
+#List all devices on a system
+lsdev
+#List all disk devices on a system (See next item for a list of classes)
+lsdev -Cc disk
+#List all customized (existing) device classes (-P for complete list)
+lsdev -C -r class
+#Remove hdisk5
+rmdev -dl hdisk5
+#Get device address of hdisk1
+getconf DISK DEVNAME hdisk1
+#   ⇐or⇒
+bootinfo -o hdisk1
+#Get the size (in MB) of hdisk1
+getconf DISK SIZE /dev/hdisk1
+#   ⇐or⇒
+bootinfo -s hdisk1
+#List all disks belonging to scsi0
+lsdev -Cc disk -p scsi0
+#Find the slot of a PCI Ethernet adapter
+lsslot -c pci -l ent0
+#Find the (virtual) location of an Ethernet adapter
+lscfg -l ent1
+#Find the location codes of all devices in the system
+lscfg
+#List all MPIO paths for hdisk0
+lspath -l hdisk0
+#Find the WWN of the fcs0 HBA adapter
+lscfg -vl fcs0 | grep Network
+#Temporarily change console output to /console.out
+swcons /console.out
+                 #(Use swcons to change back.)
+#Get statistics and extended information on fcs0
+fcstat fcs0
+
+################################################################################
+## Tasks
+#Change port type of HBA (This may vary by HBA vendor)
+rmdev -d -l fcnet0
+rmdev -d -l fscsi0
+chdev -l fcs0 -a link type=pt2pt
+cfgmgr
+#Mirroring rootvg to hdisk1
+extendvg rootvg hdisk1
+mirrorvg rootvg
+bosboot -ad hdisk0
+bosboot -ad hdisk1
+bootlist -m normal hdisk0 hdisk1
+#Mount a CD/DVD ROM to /mnt
+mount -rv cdrfs /dev/cd0 /mnt       #(for a CD)
+mount -v udfs -o ro /dev/cd0 /mnt   #(for a DVD)
+#   Note the two diﬀerent types of read-only ﬂags. Either is Ok.
+#Create a VG, LV, and FS, mirror, and create mirrored LV
+mkvg -s 256 -y datavg hdisk1        #(PP size is 1/4 Gig)
+mklv -t jfs2log -y dataloglv datavg 1
+logform /dev/dataloglv
+mklv -t jfs2 -y data01lv datavg 8   #(2 Gig LV)
+crfs -v jfs2 -d data01lv -m /data01 -A yes
+extendvg datavg hdisk2
+mklvcopy dataloglv 2                #(Note use of mirrorvg in next example)
+mklvcopy data01lv 2
+syncvg -v datavg
+#lsvg -l datavg will now list 2 PPs for every LP
+mklv -c 2 -t jfs2 -y data02lv datavg 8   #(2 Gig LV)
+crfs -v jfs2 -d data02lv -m /data02 -A yes
+mount -a
+#Move a VG from hdisk1 to hdisk2
+extendvg datavg hdisk2
+mirrorvg datavg hdisk2
+#  Wait for mirrors to synchronize
+unmirrorvg datavg hdisk1
+reducevg datavg hdisk1
+#Find the free space on PV hdisk1
+lspv hdisk1
+#   (Look for “FREE PPs”)
+
+################################################################################
+## Networking
+#The entX is the physical device. It is associated with physical layer
+#   settings such as link speed, and duplex. enX and etX determine the
+#   frame type run on entX. IP addresses are conﬁgured on enX (Standard
+#   Ethernet) or etX (802.3). Typically only enX is used.
+#The examples here assume that the default TCP/IP conﬁguration
+#   (rc.net) method is used. If the alternate method of using rc.bsdnet
+#   is used then some of these examples may not apply.
+#Determine if rc.bsdnet is used over rc.net
+lsattr -El inet0 -a bootup option
+#TCP/IP related daemon startup script
+/etc/rc.tcpip
+#To view the route table
+netstat -r
+#To view the route table from the ODM DB
+lsattr -EHl inet0 -a route
+#Temporarily add a default route
+route add default 192.168.1.1
+#Temporarily add an address to an interface
+ifconfig en0 192.168.1.2 netmask 255.255.255.0
+#Temporarily add an alias to an interface
+ifconfig en0 192.168.1.3 netmask 255.255.255.0 alias
+#To permanently add an IP address to the en1 interface
+chdev -l en1 -a netaddr=192.168.1.1 -a netmask=0xffffff00
+#Permanently add an alias to an interface
+chdev -l en0 -a alias4=192.168.1.3,255.255.255.0
+#Remove a permanently added alias from an interface
+chdev -l en0 -a delalias4=192.168.1.3,255.255.255.0
+#List ODM (next boot) IP conﬁguration for interface
+lsattr -El en0
+#Permanently set the hostname
+chdev -l inet0 -a hostname=bombay
+#List networking devices
+lsdev -Cc tcpip
+#List Network Interfaces
+lsdev -Cc if
+#List attributes of inet0
+lsattr -Ehl inet0
+#List (physical layer) attributes of ent0
+lsattr -El ent0
+#List (networking layer) attributes of en0
+lsattr -El en0
+#Set (desired) speed is found through the entX device
+lsattr -El ent0 -a media speed
+#Find actual (negotiated) speed, duplex, and link
+entstat -d ent0
+#The interface must be up (ifconfig en0 up) for stats to be valid
+#Set the ent0 link to Gig full duplex
+chdev -l ent0 -a media speed=1000 Full Duplex -P
+#   Auto Negotiation is another option
+#Turn oﬀ Interface Speciﬁc Network Options
+no -p -o use isno=0
+#Get (long) statistics for the ent0 device (remove -d for shorter results)
+entstat -d ent0
+#   ⇐or⇒
+netstat -v ent0
+#The results of entstat vary by device type. Virtual, physical, and
+#   IVE (LHEA) devices all produce diﬀerent results.
+#List all open, and in use TCP and UDP ports
+netstat -anf inet
+#List all LISTENing TCP ports
+netstat -na | grep LISTEN
+#Remove all TCP/IP conﬁguration from a host
+rmtcpip
+#Flush the netcd DNS cache
+netcdctrl -t dns -e hosts -f
+#• Hostname lookup order is determined using /etc/irs.conf,
+#   /etc/netsvc.conf and then $NSORDER. irs.conf and $NSORDER
+#   are typically not used.
+#• IP packets can be captured using iptrace / ipreport or tcpdump
+
+################################################################################
+## Error Logging
+#Error logging is provided through: alog, errlog and syslog.
+#   alog - boot, console messages, NIM, others
+#   errlog - hardware, kernel, and some apps
+#   syslog - Internet dameons, and apps
+#Display the contents of the boot log
+alog -o -t boot
+#Display the contents of the console log
+alog -o -t console
+#List all log types that alog knows
+alog -L
+#Display the contents of the system error log
+errpt
+#       Add -a or -A for varying levels of verbosity
+#Clear all errors up until x days ago.
+errclear x
+#List info on error ID FE2DEE00 (IDENTIFIER column in errpt output)
+errpt -aDj FE2DEE00
+#Put a “tail” on the error log
+errpt -c
+#List all errors that happened today
+errpt -s ‘date +%m%d0000%y‘
+#To list all errors on hdisk0
+errpt -N hdisk0
+#To list details about the error log
+/usr/lib/errdemon -l
+#To change the size of the error log to 2 MB
+/usr/lib/errdemon -s 2097152
+#syslog.conf line to send all messages to log ﬁle
+*.debug /var/log/messages
+#   AIX uses *.debug for all, not *.*
+
+################################################################################
+## LVM
+#Put a PVID on a disk
+chdev -l hdisk1 -a pv=yes
+#   PVIDs are automatically placed on a disk when added to a VG
+#Remove a PVID from a disk
+chdev -l hdisk1 -a pv=clear
+#List all PVs in a system (along) with VG membership
+lspv
+#Create a VG called datavg using hdisk1 using 64 Meg PPs
+mkvg -y datavg -s 64 hdisk1
+#Create a LV on (previous) datavg that is 1 Gig in size
+mklv -t jfs2 -y datalv datavg 16
+#List all LVs on the datavg VG
+lsvg -l datavg
+#List all PVs in the datavg VG
+lsvg -p datavg
+#Take the datavg VG oﬄine
+varyoffvg datavg
+#Remove the datavg VG from the ODM
+exportvg datavg
+#Import the VG on hdisk5 as datavg
+importvg -y datavg hdisk5
+#Vary-on the new datavg VG (can use importvg -n)
+varyonvg datavg
+#List all VGs (known to the ODM)
+lsvg
+#List all VGs that are on line
+lsvg -o
+#List details of VG, inc. free space
+lsvg datavg
+#Check to see if underlying disk in datavg has grown in size
+chvg -g datavg
+#Move a LV from one PV to another
+migratepv -l datalv01 hdisk4 hdisk5
+#Delete a VG by removing all PVs with the reducevg command.
+reducevg hdisk3
+#    (-d removes any LVs that may be on that PV)
+#Note: See additional examples in “tasks” section.
+
+################################################################################
+## smitty FastPaths
+#Find a smitty FastPath by walking through the smitty screens to
+#   get to the screen you wish. Then Hit F8. The dialog will tell you
+#   what FastPath will get you to that screen. (F3 closes the dialog.)
+#       lvm - LVM Menu
+#       mkvg - Screen to create a VG
+#       configtcp - TCP/IP Conﬁguration
+#       eadap - Ethernet adapter section
+#       fcsdd - Fibre Channel adapter section
+#       chgsys - Change / Show characteristics of OS
+#       users - Manage users (including ulimits)
+#       devdrpci - PCI Hot Plug manger
+#       etherchannel - EtherChannel / Port Aggregation
+
+################################################################################
+## System Resource Controller
+#Most SRC based services are started from /etc/rc.tcpip
+#Start the xntpd service
+startsrc -s xntpd
+#Stop the NFS related services
+stopsrc -g nfs
+#Refresh the named service
+refresh -s named
+#List all registered services on the system
+lssrc -a
+#Show status of ctrmc subsystem
+lssrc -l -s ctrmc
+
+################################################################################
+## Performance Monitoring (Denotes trace based tools.)
+#CPU
+mpstat
+topas -P
+w
+lparstat
+ps
+iostat -tT 1
+tprof
+curt
+#Memory
+vmstat
+svmon
+ps -o fields
+topas
+ipcs -m
+#Network I/O
+[ent|tok|fddi|atm]stat
+netstat
+netpmon
+topas -E
+#Disk I/O
+iostat
+fcstat
+lvmstat
+filemon
+fileplace
+topas -D
+#Application
+truss
+probevue
+tprof
+svmon -P pid
+ps -o fields -p pid
+topas
+#The ~ character toggles to nmon-mode in topas
+#Other
+#Check for disk stat history collection
+lsattr -HEl sys0 -a iostat
+#Enable historical disk statistic collection
+chdev -l sys0 -a iostat=true
+
+################################################################################
+## Working with Packages
+#List all ﬁles in bos.games ﬁleset.
+lslpp -f bos.games
+#Find out what ﬁleset “fortune” belongs to.
+lslpp -w /usr/games/fortune
+#List packages that are above the current OS level
+oslevel -g
+#Find packages below a speciﬁed (ML/)TL
+oslevel -rl 5300-05
+#List all ﬁlesets
+lslpp -L
+#List all ﬁlesets in a grepable or awkable format
+lslpp -Lc
+#Find the package that contains the ﬁlemon utility
+which fileset filemon
+#Install the database (from CD/DVD) for which fileset
+installp -ac -d /dev/cd0 bos.content list
+#Create a mksysb backup of the rootvg volume group
+mksysb -i /mnt/server1.mksysb.‘date +%m%d%y‘
+#Cleanup after a failed install
+installp -C
+
+################################################################################
+## Memory / Swapﬁle
+#List size, summary, and paging activity by paging space
+lsps -a
+#List summary of all paging space
+lsps -s
+#List the total amount of physical RAM in system
+lsattr -El sys0 -a realmem
+#Create a new paging device on rootvg of 64 PPs
+mkps -a -s 64 -n rootvg
+#Extend the existing paging space by 8 PPs
+chps -s 8 hd6
+# major users of memory
+ipcs -am
+# show free memory
+svmon
+svmon -G -O unit=MB
+lsattr -El mem0
+
+################################################################################
+## NFS
+#List all exported ﬁle systems
+exportfs
+#Refresh exports after editing /etc/exports
+exportfs -av
+#Temporarily export the /proj directory, allowing root access by server1
+exportfs -i -o rw root=server1 /proj
+#   (un)share(all) are symlinks to exportfs for Unix compatibility.
+#   [mk|rm|ch]nfs are provided to maintain /etc/exports
+
+################################################################################
+## Getting info about the system
+#Find the OS, (ML/)TL (-r), and service pack version / date (-s)
+oslevel -r
+#    ⇐or⇒
+oslevel -s
+#List all attributes of system
+getconf -a
+#Find the type of kernel loaded (use -a to get all options)
+getconf KERNEL BITMODE
+#   bootinfo and getconf can return much of the same information,
+#getconf returns more and has the grepable -a option.
+#Find the level of ﬁrmware on a system
+invscout
+#    ⇐or⇒
+lscfg -pv
+#List all attributes for the kernel “device”
+lsattr -El sys0
+#Print a “dump” of system information
+prtconf
+#Get all page sizes supported on this system
+pagesize -a
+# Is this an LPAR?
+uname -L
+# more info
+prtconf
+
+################################################################################
+## Users and Groups
+#List all settings for root user in grepable format
+lsuser -f root
+#List just the user names
+lsuser -a id ALL | sed 's/ id.*$//'
+#Find the fsize value for user wfavorit
+lsuser -a fsize wfavorit
+#Change the fsize value for user wfavorit
+chuser fsize=-1 wfavorit
+#   (/usr)/bin/sh and (/usr)/bin/ksh are the same ﬁle. Use bsh for
+#       the Bourne shell.
+#Additional Information
+#   http://publib.boulder.ibm.com/infocenter/systems/scope/aix
+#   http://www.redbooks.ibm.com/portals/unix
+#Display error codes can be found in the “Diagnostic Information for
+#   Multiple Bus Systems” manual
+
+################################################################################
+## RPM/Package stuff
+# tell rpm about non-rpm libraries
+/usr/sbin/updtvpkg
+

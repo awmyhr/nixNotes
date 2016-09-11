@@ -1,0 +1,147 @@
+# these are notes for my new environment
+# in many cases this info is ripped right off the web
+# keyboard shorcuts listed per my config, and are NOT exhaustive
+#### fedora xfce spin #########################################################
+----Community Linux which prototypes for RHEL
+    ## Refer to linuxNotes ##
+
+#### i3 #######################################################################
+----Very light-weight tiled window manager
+    i3
+        Alt-Shift-c reload config
+        Alt-Shift-r restart in place
+        Alt-Pause   shutdown menu (logout seems to hang system)
+    Launcher
+        Alt-d            app menu
+        Alt-g            gedit
+        Alt-b            browser (midori)
+        Alt-Return       new terminator
+        Alt-Shift-Return new 'sensible' term **
+    Window
+        Alt-Shift-q kill focused window
+        Alt-k       move focus to window above  Alt-Up
+        Alt-j       move focus to window below  Alt-Down
+        Alt-h       move focus to window left   Alt-Left
+        Alt-l       move focus to window right  Alt-Right
+        Alt-Shift-k move window up              Alt-Shift-Up
+        Alt-Shift-j move window down            Alt-Shift-Down
+        Alt-Shift-h move window left            Alt-Shift-Left
+        Alt-Shift-l move window right           Alt-Shift-Right
+        Alt-Shift-o split horizontal for next app
+        Alt-Shift-i split vertical for next app
+        Alt-s       stack all windows
+        Alt-t       tab all windows
+        Alt-e       split all windows (default)
+        Alt-Shift-Space float focused window
+    Workspace
+        Alt-[1-0]       goto/create workspace 1-10
+        Alt-Shift-[1-0] move focused window to workspace 1-10
+
+# ** NOTE: 'sensible' term looks for 1st available of these:
+#       $TERMINAL, urxvt, rxvt, terminator, eterm, aterm, xterm,
+#       gnome-terminal, roxterm, xfce4-terminal
+#### xfce4 ####################################################################
+----Very light-weight desktop manager
+    Application Shortcuts
+        Alt-F2          Appfinder (collapsed)
+        Alt-F3          Appfinder
+        Ctrl-Alt-Esc    Logout
+        Ctrl-Alt-Bkspc  xkill
+        Print           Screenshooter -f
+        Alt-Print       Screenshooter -w
+
+#### terminator ###############################################################
+----Advanced term with built-in tabbing/windows/panes
+    Term shortcuts
+        Ctrl-k  move focus to term above
+        Ctrl-j  move focus to term below
+        Ctrl-h  move focus to term left
+        Ctrl-l  move focus to term right
+        Ctrl-Shift-j    move focus to next term
+        Ctrl-Shift-k    move focus to prev term
+        Ctrl-Shift-o    split term horizontal
+        Ctrl-Shift-i    split term vertical
+        Ctrl-Shift-w    close term
+        Ctrl-Shift-f    search text in term scrollback
+    Tab shortcuts
+        Ctrl-Tab        move focus to next tab
+        Ctrl-Shift-Tab  move focus to previous tab
+        Ctrl-Shift-T    new tab
+
+#### tmux #####################################################################
+----Persistant remote sessions
+    create a new session: tmux new -s <name>
+    attach to a session: tmux attatch <name>
+    create a session socket: tmux -S </path/to/socket> ex: /tmp/new_socket
+    attatch to a session socket: tmux -S </path/to/socket> attatch
+                                (note: must have rwx perms on socket)
+                                (if more powerful session sharing needed
+                                    check: https://github.com/zolrath/wemux )
+
+    enter command mode: Ctrl-a
+        ? - get help
+    Sessions
+        s - list sessions
+        $ - rename current session
+        d - detach from current session
+    Windows
+        c - create new window
+        , - rename current window
+        S - list windows
+        J - change to next widow
+        K - cahnge to previous window
+        0 to 9 - select windows 0 through 9
+    Panes
+        o - create a horizontal pane
+        i - create a vertical pane
+        h - move to the left pane  *
+        j - move to the pane below *
+        l - move to the right pane *
+        k - move to the pane above *
+        q - show pane numbers
+        o - toggle between panes
+        } - swap with next pane
+        { - swap with previous pane
+        ! - break the pane out of the window
+        w - kill the current pane
+
+#### zsh ######################################################################
+----More advanced then bash
+
+#### vim ######################################################################
+----vi improved
+
+#### gedit ####################################################################
+----editor of choice
+    # Requires some plug-ins from https://wiki.gnome.org/Apps/Gedit/ThirdPartyPlugins-v3.8
+    Tabs
+        Ctrl-w  close tab
+        Ctrl-Shift-w close all tabs
+        Ctrl-Shift-l    save all tabs
+    Text manipulation
+        Ctrl-j  join lines
+        Ctrl-m  comment block
+        Ctrl-Shift-m uncomment block
+
+#### git ######################################################################
+----Good Enough version control
+
+    # these aliases come from the oh-my-zsh git plugin
+g       git                                 gst     git status
+gl      git pull	                        gup     git fetch && git rebase
+gp      git push	                        gc      git commit -v
+gca     git commit -v -a	                gco     git checkout
+gcm     git checkout master	                gb      git branch
+gba     git branch -a                       gcount  git shortlog -sn
+gcp     git cherry-pick                     glg     git log --stat --max-count=5
+glgg    git log --graph --max-count=5	    gss     git status -s
+ga      git add	                            gm      git merge
+grh     git reset HEAD                      grhh    git reset HEAD --hard
+gsr     git svn rebase                      gsd     git svn dcommit
+ggpull  git pull origin $(current_branch)	ggpush  git push origin $(current_branch)
+gdv     git diff -w "$@" | view -
+ggpnp	git pull origin $(current_branch) && git push origin $(current_branch)
+gpa     git add .; git commit -m "$1"; git push;    # only in the ocodo fork.
+git-svn-dcommit-push	git svn dcommit && git push github master:svntrunk
+
+

@@ -1,0 +1,17 @@
+#RHEL 7 hack pre-reqs
+# These are good off the base:
+git cpp make autoconf automake libtool patch memcached gcc-c++ cmake wget expat-devel binutils-devel svn elfutils-libelf-devel rpmdevtools yum-utils patch
+libmemcached-devel tbb-devel libdwarf-devel mysql-devel libxml2-devel libicu-devel pcre-devel gd-devel sqlite-devel pam-devel libcurl-devel bzip2-devel openldap-devel readline-devel libcap-devel libevent-devel libxslt-devel boost-devel ImageMagick-devel 
+
+# These are not:
+##  requires epel repo
+libmcrypt-devel
+jemalloc-devel
+
+##  requires the optional repo
+libc-client-devel
+oniguruma-devel
+
+##  needs to be built
+glog-devel  (fedora repo has it, epel does not)
+
