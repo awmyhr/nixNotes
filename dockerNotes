@@ -5,10 +5,59 @@
 # ISO date stamp
 `date +%Y%m%d-%H%M`
 ################################################################################
+# Some support packages:
+#   atomic-reactor          - Improved builder for Docker images
+#   docker-anaconda-addon   - Anaconda kickstart support for Docker
+#   docker-compose          - Multi-container orchestration for Docker
+#   docker-logrotate        - cron job to run logrotate on Docker containers
+#   docker-novolume-plugin  - Block container starts with local volumes defined
+#   docker-utils            - External utilities for the docker experience
+#   docker-vim              - vim syntax highlighting files for Docker
+#   docker-zsh-completion   - zsh completion files for Docker
+#   fedora-dockerfiles      - Example dockerfiles to assist standing up containers quickly
+#   sen                     - Terminal User Interface for docker engine
+#   skopeo                  - Inspect Docker images and repositories on registries
+#   source-to-image         - toolkit and workflow for building reproducible Docker images from source code
+################################################################################
+### Docker Commands:
+#    attach    Attach to a running container
+#    build     Build a container from a Dockerfile
+#    commit    Create a new image from a container's changes
+#    cp        Copy files/folders from the containers filesystem to the host path
+#    diff      Inspect changes on a container's filesystem
+#    events    Get real time events from the server
+#    export    Stream the contents of a container as a tar archive
+#    history   Show the history of an image
+#    images    List images
+#    import    Create a new filesystem image from the contents of a tarball
+#    info      Display system-wide information
+#    insert    Insert a file in an image
+#    inspect   Return low-level information on a container
+#    kill      Kill a running container
+#    load      Load an image from a tar archive
+#    login     Register or Login to the docker registry server
+#    logs      Fetch the logs of a container
+#    port      Lookup the public-facing port which is NAT-ed to PRIVATE_PORT
+#    ps        List containers
+#    pull      Pull an image or a repository from the docker registry server
+#    push      Push an image or a repository to the docker registry server
+#    restart   Restart a running container
+#    rm        Remove one or more containers
+#    rmi       Remove one or more images
+#    run       Run a command in a new container
+#    save      Save an image to a tar archive
+#    search    Search for an image in the docker index
+#    start     Start a stopped container
+#    stop      Stop a running container
+#    tag       Tag an image into a repository
+#    top       Lookup the running processes of a container
+#    version   Show the docker version information
+#    wait      Block until a container stops, then print its exit code
+################################################################################
 # list running containers
 docker ps
 # list all containers
-docer ps -a
+docker ps -a
 
 # stop and remove a single container:
 docker stop <containerID> && docker rm <containerID>
@@ -32,4 +81,39 @@ docker build -t <ImageName> .
 # start container w/X11 redirect (haven't gotten this to work yet)
 docker run -it -v /tmp/.X11-unix:/tmp/.X11-unix -e DISPLAY=unix$DISPLAY --name cathode jess/1995
 ################################################################################
-#
+
+docker images
+docker commit <containerid> <newreponame>
+docker tag <imageid> <tag>
+docker port
+docker inspect
+
+################################################################################
+### atomic/rpm-ostree Commands:
+# "atomic host" is basically an alias for "rpm-ostree"
+    # diff                Show diffs between 2 container images/file diff/RPMS
+    # help                Display help associated with the image
+    # host                execute Atomic host commands
+    # info                display label information about an image
+    # install             execute container image install method
+    # mount               mount container image to a specified directory
+    # push (upload)       push latest image to repository
+    # pull                pull latest image from a repository
+    # scan                scan an image or container for CVEs
+    # ps                  list the containers
+    # stop                execute container image stop method
+    # run                 execute container image run method
+    # storage (migrate)   manage container storage
+    # top                 Show top-like stats about processes running in containers
+    # uninstall           execute container image uninstall method
+    # unmount (umount)    unmount container image
+    # update              pull latest container image from repository
+    # version             display image 'Name Version Release' label
+    # verify              verify image is fully updated
+################################################################################
+### atomic stuff   
+# preform an upgrade
+atomic host upgrade
+# apply update
+systemctl reboot
+
