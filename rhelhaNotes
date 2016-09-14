@@ -10,22 +10,25 @@
 ################################################################################
 #In VMWare, disks that are to be shared need to be on a "physical" SCSI controller
 #  [[
-#    vm's may or may not need these settings added to Options->General->Configuration Paramaters
+#    vm's need these settings added to Options->General->Configuration Paramaters
 #       scsi1:0.sharing = "multi-writer"
 #       scsi2:0.sharing = "multi-writer"
 #    for each of the controller/disk pairs that are shared.
 #  ]]
 #Set up the volume group(s) as normal, but then turn it off (only needs to be done on 1 node):
 vgchange -an <vg>
+# volume creation is slightly different, in that lvcreate needs some flags:
+lvcreate -n <volname> -L <size> <volgroup> --addtag pacemaker --config 'activation { volume_list = [ "@pacemaker" ] }'
 #On each node nable HA-LVM
 lvmconf --enable-halvm --services --startstopservices
 #On each node specify local volume groups
 vi /etc/lvm/lvm.conf
-# Set volume list parameter
+# Set volume list parameter (local volumes only!)
 volume_list=["<vg1>","<vgX>"]
-# rebuild initramfs and reboot
-dracut -H -f /boot/initramfs-$(uname -r).img $(uname -r)
+# rebuild initramfs and reboot (assuming you running the current kernel)
+dracut -H -f 
 reboot
+################################################################################
 #Don't forget to create the mount points on all nodes
 # The mountpoints should be "chown root:root" and "chmod 555"
 # this will help ensure no data is written to the non-active node
@@ -53,6 +56,7 @@ pcs cluster auth <node1> <node2> <nodeX>
 #<cman broadcast="no" expected_votes="1" transport="udpu" two_node="1"/>
 sed -i -e '/EXCEPT/ s/udp/udpu/' /etc/cluster/cluster.conf;
 #
+################################################################################
 #setup and start cluster
 pcs cluster setup [--two_node] --name <ClusterName> <node1> <node2> <nodeX> 
 pcs cluster enable --all && pcs cluster start --all
