@@ -4,6 +4,10 @@
 #
 # ISO date stamp
 `date +%Y%m%d-%H%M`
+################################################################################
+### Some VM settings:
+# Display RAM: Server 9M; Desktop 64MB
+################################################################################
 
 ################################################################################
 # methods to determine original build date
@@ -313,6 +317,14 @@ lsof | egrep "libssl|libcrypto" | cut -f 1 -d " " | sort |uniq
 lsof -P -M -l -n -d '^cwd,^err,^ltx,^mem,^mmap,^pd,^rtd,^txt' -p <PID> -a      | awk '{if (NR>1) print}' | wc -l
 lsof -P -M -l -n -d '^cwd,^err,^ltx,^mem,^mmap,^pd,^rtd,^txt' -u <username> -a | awk '{if (NR>1) print}' | wc -l
 
+# System statistics
+dstat --cpu --mem-adv --swap --page --net --net-packets --disk -D total,sda,sdb,sdc --dbus 10
+# System statistics with file output
+dstat --cpu --mem-adv --swap --page --net --net-packets --disk -D total,sda,sdb,sdc --dbus --output /var/tmp/dstat.`timestamp` 10
+# Most expensive resources
+dstat --top-bio-adv --top-io-adv --top-cpu-adv --top-mem --top-oom
+# Process resource usage
+dstat --top-bio --top-io --top-cpu --top-cputime --top-cputime-avg --top-mem --top-latency --top-latency-avg
 ################################################################################
 # some nmap examples - in most cases hostname can be replaced w/ip or subnet
 #   see also: http://www.cyberciti.biz/networking/nmap-command-examples-tutorials/
