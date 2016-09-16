@@ -1,0 +1,210 @@
+#!/bin/bash NOT A REAL SHELL SCRIPT!
+# This is a cut'n'paste scriptlet
+# be sure to read & understand what you're cutting & pasting!
+#
+# ISO date stamp
+`date +%Y%m%d-%H%M`
+################################################################################
+####  This document focuses on RHEL 6 HA running on VMWare
+####     See also: https://access.redhat.com/articles/1351733 
+################################################################################
+#In VMWare, disks that are to be shared need to be on a "physical" SCSI controller
+#  [[
+#    vm's need these settings added to Options->General->Configuration Paramaters
+#       scsi1:0.sharing = "multi-writer"
+#       scsi2:0.sharing = "multi-writer"
+#    for each of the controller/disk pairs that are shared.
+#  ]]
+#Set up the volume group(s) as normal, but then turn it off (only needs to be done on 1 node):
+vgchange -an <vg>
+# volume creation is slightly different, in that lvcreate needs some flags:
+lvcreate -n <volname> -L <size> <volgroup> --addtag pacemaker --config 'activation { volume_list = [ "@pacemaker" ] }'
+#On each node nable HA-LVM
+lvmconf --enable-halvm --services --startstopservices
+#On each node specify local volume groups
+vi /etc/lvm/lvm.conf
+# Set volume list parameter (local volumes only!)
+volume_list=["<vg1>","<vgX>"]
+# rebuild initramfs and reboot (assuming you running the current kernel)
+dracut -H -f 
+reboot
+################################################################################
+#Don't forget to create the mount points on all nodes
+# The mountpoints should be "chown root:root" and "chmod 555"
+# this will help ensure no data is written to the non-active node
+#
+#Each node should have static IPs, and all nodes should be listed in all /etc/hosts files
+# (But NOT as an alias to localhost)
+#
+################################################################################
+#Here is where actual cluster install/config starts
+# Each node should have access to a RHEL HA repository
+# For example "rhel-x86_64-server-ha-6" on a Satellite server
+#
+yum -y install pacemaker cman pcs fence-agents
+chkconfig corosync off
+#
+#add hacluster to /etc/security/access.conf
+sed -i -e '/EXCEPT/ s/root/root hacluster/' /etc/security/access.conf;
+echo <password> | passwd --stdin hacluster
+chkconfig pcsd on && service pcsd start
+pcs cluster auth <node1> <node2> <nodeX> 
+#
+#In some cases multicast must be turned off and Unicast should be used; set "cman trasnport="udpu" 
+#vi /etc/cluster/cluster.conf
+#find line like below
+#<cman broadcast="no" expected_votes="1" transport="udpu" two_node="1"/>
+sed -i -e '/EXCEPT/ s/udp/udpu/' /etc/cluster/cluster.conf;
+#
+################################################################################
+#setup and start cluster
+pcs cluster setup [--two_node] --name <ClusterName> <node1> <node2> <nodeX> 
+pcs cluster enable --all && pcs cluster start --all
+#
+#Create a vmware fence, note word immediately after "create" is name of resource
+pcs stonith create <FENCEresourceName> fence_vmware_soap pcmk_host_map="<node1>:<node1vmware>;<node1>:<node1vmware" ipaddr=uscku1vb05vc01.metnet.net login="METNET.NET\AP574003" passwd="greaj6Ni" ssl=1 ssl_insecure=1 action=off pcmk_reboot_timeout=60 pcmk_monitor_timeout=60 pcmk_status_timeout=60 pcmk_list_timeout=60 pcmk_off_timeout=60 pcmk_on_timeout=60
+# Though normally one would run a stonith device on each node, the following documents:
+#  https://access.redhat.com/solutions/917813
+#  https://access.redhat.com/solutions/667443
+# Imply that for fence_vmware_soap this may not be a good idea
+#
+#Create other resources
+pcs resource create <IPresourceName> IPaddr2 ip=<IP> cidr_netmask=24 --group <groupName>
+pcs resource create <VGresourceName> LVM volgrpname=<vg> exclusive=true --group <groupName>
+pcs resource create <FSresourceName> Filesystem device=<devicepath> directory=<mountpoint> fstype=ext4 --group <groupName>
+#
+#This will send e-mails whenever a resource starts/stops
+# mailx should be installed and configured for this to work
+pcs resource create <MTresourceName> MailTo email=<emailAddress> subject="Subject Here" --group <groupName>
+#
+#Create a constraint to ensure all resources start on same node in correct order:
+pcs constraint colocation set <IPresourceName> <VGresourceName> <FSresourceName> sequential=true require-all=true
+#
+# Set a cluster property
+pcs property set <property>=<value>
+#
+# Avoid unnecessary resource relocation -- set stickiness on resource group and prefers on nodes
+pcs constraint location <resourceGroupName> prefers <node1>=200
+pcs constraint location <resourceGroupName> prefers <nodeX>=100
+#  You can set the stickiness score per-resource, or just set the default
+pcs resource defaults resource-stickiness=1000
+pcs resource meta <resourceGroupName> resource-stickiness=1000
+#
+################################################################################
+#Common commands to check cluster
+# Get status
+pcs [cluster|groups|resources|nodes|corosync|pcsd] status [--full]
+# Show fence devices/status
+pcs stonith show [--full]
+# Verify configuratoin of running cluster, no output == good (This is the same as "crm_verify -L -V")
+pcs cluster verify [-V]
+# Show information about resources
+pcs resource show [<resourceName|resourceGroupName>]
+# Show list of constraints
+pcs constraint show
+# Display status of rings
+corosync-cfgtool -s
+# Show quorum status
+corosync-quorumtool -s
+# Show nodes participating in quorum
+corosync-quorumtool -l
+# Show cluster properties
+pcs property list --all
+#
+################################################################################
+#Common commands to control cluster
+# Put a node in standby -- it will not host any resources
+pcs cluster standby <nodeName>
+# Undo above
+pcs cluster unstandby <nodename>
+# control status of resource (groups)
+pcs resource [enable|disable] (resourceName|resourceGroupName)
+# move resource group to nodeX. the optional lifetime parameter says how long the resource stays on nodeX
+pcs resource move <resourceGroupName> <nodeX> [lifetime=<lifetime>]
+#  Note: this creates a temporary constraint (see 'pcs constraint show', which can be cleared with
+pcs resource clear <resourceGroupName>
+# If need to reset failcount
+pcs resource failcount reset <resourceName>
+# To set which node a resource group prefers
+pcs constraint location <resourceGroupName> prefers <node>
+# Set resource defaults
+pcs resource op defaults <optionName>=<value>
+# Example: pcs resource op defaults timeout=60
+# Set specific options for specific resources
+pcs resource update <resource> op <setting> <optionName>=<value>
+# Example: pcs resource update oraresource op start timeout=40
+
+#
+################################################################################
+# create resource to run on every node
+pcs resource clone <resourceName>
+pcs resource create <paramaters> --clone
+#
+################################################################################
+#Additional steps for custom resources:
+# Create <custom> resource directory, copy file in, set permissions/ownership
+# Note: typically <custom> is company/organization name
+#         and <scriptname> is same as the resource name
+mkdir /usr/lib/ocf/resource.d/<custom>
+cp    </path/to/script/scriptname> /usr/lib/ocf/resource.d/<custom>/<scriptname>
+chown root:root /usr/lib/ocf/resource.d/<custom>/<scriptname>
+chmod 755 /usr/lib/ocf/resource.d/<custom>/<scriptname>
+# Check if custom resource exists
+pcs resource list | grep -i <scriptname>
+pcs resource describe ocf:<custom>:<scriptname>
+# create resource, but don't monitor
+pcs resource create <resourceName> <scriptname> op monitor enabled=false on-fail=ignore --group <resourceGroupName>
+#
+################################################################################
+#Controlling the cluster daemons:
+# on/start
+chkconfig pcsd on       && service pcsd start
+chkconfig pacemaker on  && service pacemaker start
+service pcsd start      && service pacemaker start
+# off/stop
+chkconfig pacemaker off && service pacemaker stop
+chkconfig pcsd off      && service pcsd stop
+service pacemaker stop  && service pcsd stop
+#
+################################################################################
+#Misc info
+# Information regarding db2 resource:l
+#  http://www.linux-ha.org/wiki/Db2_(resource_agent)
+################################################################################
+#Example resource creation for an Oracle cluster
+# Note: resources added in a group are tacked onto the end
+#       group implies colocation, order, and required all
+# VIP
+pcs resource create oravip       IPaddr2    ip=192.168.100.200 cidr_netmask=24 --group oracle
+# Filesystems
+pcs resource create oracvg01     LVM        volgrpname=cvg01 exclusive=true --group oracle
+pcs resource create oracvg01_u00 Filesystem device=/dev/cvg01/u00 directory=/u00 fstype=ext4 --group oracle
+pcs resource create oracvg02     LVM        volgrpname=cvg02 exclusive=true --group oracle
+pcs resource create oracvg02_u01 Filesystem device=/dev/cvg02/u01 directory=/u01 fstype=ext4 --group oracle
+pcs resource create oracvg02_u02 Filesystem device=/dev/cvg02/u02 directory=/u02 fstype=ext4 --group oracle
+pcs resource create oracvg02_u03 Filesystem device=/dev/cvg02/u03 directory=/u03 fstype=ext4 --group oracle
+pcs resource create oracvg02_u04 Filesystem device=/dev/cvg02/u04 directory=/u04 fstype=ext4 --group oracle
+pcs resource create oracvg03     LVM        volgrpname=cvg03 exclusive=true --group oracle
+pcs resource create oracvg03_u98 Filesystem device=/dev/cvg03/u98 directory=/u98 fstype=ext4 --group oracle
+pcs resource create oracvg03_u99 Filesystem device=/dev/cvg03/u99 directory=/u99 fstype=ext4 --group oracle
+# Database built-in resources
+pcs resource create lsn-cbdhtest oralsnr    sid=MYDB home=/u00/app/oracle/product/12.1.0.2 user=oracle  --group oracle
+pcs resource create odb-cbdhtest oracle     sid=MYDB home=/u00/app/oracle/product/12.1.0.2 user=oracle  --group oracle
+# Stickiness, to keep the cluster from automagically moving when primary node comes on-line
+pcs resource defaults resource-stickiness=1000
+pcs constraint location oracle prefers <node1>=200
+pcs constraint location oracle prefers <nodeX>=100
+#
+################################################################################
+#Example custom resource creation
+# Note: for clarity sake, <ScriptName> should be same as <ResourceType>
+# On both nodes:
+mkdir /usr/lib/ocf/resource.d/<sitename>
+cp    </path/to>/<ScriptName> /usr/lib/ocf/resource.d/<sitename>/<ScriptName>
+chown root:root /usr/lib/ocf/resource.d/<sitename>/<ScriptName>
+chmod 755 /usr/lib/ocf/resource.d/<sitename>/<ScriptName>
+#  On either node (this will set up an unmonitored resource):
+pcs resource create db2run <ResourceType> op monitor enabled=false on-fail=ignore --group <groupName>
+#
+################################################################################
+

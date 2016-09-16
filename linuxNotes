@@ -4,6 +4,10 @@
 #
 # ISO date stamp
 `date +%Y%m%d-%H%M`
+################################################################################
+### Some VM settings:
+# Display RAM: Server 9M; Desktop 64MB
+################################################################################
 
 ################################################################################
 # methods to determine original build date
@@ -313,6 +317,14 @@ lsof | egrep "libssl|libcrypto" | cut -f 1 -d " " | sort |uniq
 lsof -P -M -l -n -d '^cwd,^err,^ltx,^mem,^mmap,^pd,^rtd,^txt' -p <PID> -a      | awk '{if (NR>1) print}' | wc -l
 lsof -P -M -l -n -d '^cwd,^err,^ltx,^mem,^mmap,^pd,^rtd,^txt' -u <username> -a | awk '{if (NR>1) print}' | wc -l
 
+# System statistics
+dstat --cpu --mem-adv --swap --page --net --net-packets --disk -D total,sda,sdb,sdc --dbus 10
+# System statistics with file output
+dstat --cpu --mem-adv --swap --page --net --net-packets --disk -D total,sda,sdb,sdc --dbus --output /var/tmp/dstat.`timestamp` 10
+# Most expensive resources
+dstat --top-bio-adv --top-io-adv --top-cpu-adv --top-mem --top-oom
+# Process resource usage
+dstat --top-bio --top-io --top-cpu --top-cputime --top-cputime-avg --top-mem --top-latency --top-latency-avg
 ################################################################################
 # some nmap examples - in most cases hostname can be replaced w/ip or subnet
 #   see also: http://www.cyberciti.biz/networking/nmap-command-examples-tutorials/
@@ -422,6 +434,8 @@ repoquery -lq --installed <packagename>
 dnf repoquery -l <packagename>
 # list installed rpms by size
 rpm -qa --queryformat="%{NAME} %{SIZE}\n" | sort -k 2 -n
+# list files installed from a specific repo
+dnf repository-packages <repo> list installed
 
 # pmap (process memory usage) examples
 # report memory map of a process
@@ -461,6 +475,23 @@ find . -type f -size 0| xargs -0 rm
 ## systemd things
 # check how long the last boot took. blame will show each startup item
 systemd-analyze [blame]
+
+################################################################################
+## Some random and desktop stuff
+# list of modifier keys
+xmodmap
+# full(ish) list of keycodes
+xmodmap -pke
+# general info about window manager
+wmctrl -m
+# list [windows|desktops]
+wmctrl [-l|-d]
+# get wm details about a specific window (will wait for you to click on a window)
+xprop
+# send notifications to the desktop
+notify-send
+# work with physical screens (single or multiple)
+xrandr
 
 ###############################################################################
 ## VMWare stuff ###############################################################
@@ -517,148 +548,149 @@ tg3                 HP NC-Series Broadcom TG3 Driver
 
 ###############################################################################
 ## USEFUL COMMANDS ############################################################
-# General
-pv      monitor the progress of data through a pipeline
-gpm     console mouse, useful to wake console without pushing a key
-git-all good enough version control
-git-extras  additional commands fer git
-snappy  lazy-fast compression
-ncdu    graphical (console) du
-tmux    multiple, detachable remote term
-mosh    remote terminal application supporting intermittent connectivity
-inxi    general system information
-vipw    like visudo excpet /etc/passwed ('-s' does /etc/shadow)
-setsid  run a program in a new session
-apropos search the manual page names and descriptions
-autojump    keeps database of past directories fer easy cd into them 
-multitail   tail several files at once
-util-linux-ng   collection of basic system utilities
-moreutils   isutf8, sponge, ts, vidir, combine, ifdata, pee, zrun, mispipe, lckdo, ifne, and parallel
-colordiff   wrapper fo diff and produces the same output but with pretty syntax highlighting.
+### General
+# pv      monitor the progress of data through a pipeline
+# gpm     console mouse, useful to wake console without pushing a key
+# git-all good enough version control
+# git-extras  additional commands fer git
+# snappy  lazy-fast compression
+# ncdu    graphical (console) du
+# tmux    multiple, detachable remote term
+# mosh    remote terminal application supporting intermittent connectivity
+# inxi    general system information
+# vipw    like visudo excpet /etc/passwed ('-s' does /etc/shadow)
+# setsid  run a program in a new session
+# apropos search the manual page names and descriptions
+# autojump    keeps database of past directories fer easy cd into them 
+# multitail   tail several files at once
+# util-linux-ng   collection of basic system utilities
+# moreutils   isutf8, sponge, ts, vidir, combine, ifdata, pee, zrun, mispipe, lckdo, ifne, and parallel
+# colordiff   wrapper fo diff and produces the same output but with pretty syntax highlighting.
+# ShellChecker lint for shell scripts
+#
+### System monitor
+# dstat   more powerful vmstat (try: dstat -lrvn 10)
+# htop    more powerful top
+# lsmod   show kernel moduels
+# ps_mem  memory usage
+# strace  debug tool
+# sysdig  capture system state and activity, then save, filter and analyze.
+# pstree  process tree
+# atop    another top
+# pidstat Report statistics on Linux tasks
+# lscpu   display information about the CPU architecture
+# lspci   list all PCI devices
+# lstopo  Show the topology of the system -- also: lstopo-no-graphics
+# lsusb   list USB devices
+# mpstat  Report processors related statistics
+# lpstat  print cups status information
+# tunelp  set various parameters of the lp device
+# ophelp  list OProfile events
+# i7z     CLI curses based monitoring tool on Intel Core i7 processors
+# perf    perf  mon of the Linux kernel-try:  perf stat [command]
+#                                             perf top
+# numastat show per-NUMA-node stats -- try:   numastat [-c|-n]
+#                                             numastat -mczs
+#                                             numastat [proc name|PID]
+# numactl Control NUMA policy  -- use:        numactl --hardware
+#
+### disk i/o
+# lsblk       list block devices
+# iotop       i/o top
+# blkparse    produce formatted output of event streams of block devices
+# blktrace    generate traces of the i/o traffic on block devices
+# seekwatcher Utility to visualize block layer IO patterns & performance (blktrace)
+# btt         analyse block i/o traces produces by blktrace
+# findmnt     find a filesystem
+# iostat      report io stats -- try: iostat -dmxz 3 ; iostat --only
+# stat        display file or file system status
+# scsi_id     get/make a unique SCSI identifier -- try: scsi_id -g -u -d /dev/path/of/device
 
-# System monitor
-dstat   more powerful vmstat (try: dstat -lrvn 10)
-htop    more powerful top
-lsmod   show kernel moduels
-ps_mem  memory usage
-strace  debug tool
-sysdig  capture system state and activity, then save, filter and analyze.
-pstree  process tree
-atop    another top
-pidstat Report statistics on Linux tasks
-lscpu   display information about the CPU architecture
-lspci   list all PCI devices
-lstopo  Show the topology of the system -- also: lstopo-no-graphics
-lsusb   list USB devices
-mpstat  Report processors related statistics
-lpstat  print cups status information
-tunelp  set various parameters of the lp device
-ophelp  list OProfile events
-i7z     CLI curses based monitoring tool on Intel Core i7 processors
-perf    perf  mon of the Linux kernel-try:  perf stat [command]
-                                            perf top
-numastat show per-NUMA-node stats -- try:   numastat [-c|-n]
-                                            numastat -mczs
-                                            numastat [proc name|PID]
-numactl Control NUMA policy  -- use:        numactl --hardware
-
-# disk i/o
-lsblk       list block devices
-iotop       i/o top
-blkparse    produce formatted output of event streams of block devices
-blktrace    generate traces of the i/o traffic on block devices
-seekwatcher Utility to visualize block layer IO patterns & performance (blktrace)
-btt         analyse block i/o traces produces by blktrace
-findmnt     find a filesystem
-iostat      report io stats -- try: iostat -dmxz 3 ; iostat --only
-stat        display file or file system status
-scsi_id     get/make a unique SCSI identifier -- try: scsi_id -g -u -d /dev/path/of/device
-
-# Network monitor
-ss      another utility to investigate sockets
-ntop    network traffic probe similar to the UNIX top command
-iftop   network top
-ifstat  network iostat
-nload   A tool can monitor network traffic and bandwidth usage in real time
-jnettop more detailed iftop
-nicstat prints out network statistics fo all network interface
-mtr     more powerful traceroute
-vnstat  Console-based network traffic monitor
-bmon    bandwidth monitor
-nmap    Network exploration tool and security / port scanner
-ndiff   show differneces in nmap scans
-nethogs network top
-arpwatch    Network monitoring tools to track IP addresses on a network
-tcptrack    Displays information about tcp connections on a network interface
-iptraf-ng   console-based network monitoring utility (or just 'iptraf')
-tcpflow     capture data transmitted over tcp connections
-                try: /usr/local/bin/tcpflow -F Tc -e http -i any -o tmp/sat -g port 80
-ifstatus    graphical ifstat
-dropwatch   kernel dropped packet monitoring utility
-ibmonitor   interactive bandwidth monitor
-biosdevname give BIOS-given name of a device -- try: biosdevname -i eth0
-monitorix   free, open source, lightweight system monitoring tool
-
-# Security
-suricata    Intrusion Detection System
-dsniff      Tools fer network auditing and penetration testing
-fwsnort     Translates Snort rules into equivalent iptables rules
-httpry      A specialized packet sniffer designed fer displaying and logging
-netcat (nc) Reads and writes data across network connections using TCP or UDP
-netsed      A tool to modify network packets
-netsniff-ng A high performance network sniffer fer packet inspection
-ngrep       Network layer grep tool
-nmap        Network exploration tool and security scanner
-scapy       Interactive packet manipulation tool and network scanner
-ssldump     An SSLv3/TLS network protocol analyzer
-tcpdump     A network traffic monitoring tool
-traceroute  Traces the route taken by packets over an IPv4/IPv6 network
-tcpick      A tcp stream sniffer, tracker and capturer
-tcpreplay   Replay captured network traffic
-tcpxtract   Tool fer extracting files from network traffic
-wireshark   Network traffic analyzer Network traffic analyzer
-lynis       Security and system auditing tool (http://cisofy.com/lynis)
-aide        Intrusion detection environment
-tripwire    IDS (Intrusion Detection System)
-
-## Packages ##
-systemtap   a system-wide instrumentation scripting tool
-                stap
-sendmail-cf needed to generate sendmail.cf files
-yum-utils   collection of yum utilites
-psmisc      Utilities to manage processes on your system
-                pstree
-                killall
-                fuser
-net-snmp    SNMP tools & libraries
-net-snmp-utils  Network management utilities using SNMP
-                snmpstatus  try: snmpstatus -c public -v 1 localhost
-                snmpwalk    try: snmpwalk -c public -v 1 localhost
-sg3_utils   SCSI command set utils
-                rescan-scsi-bus.sh
-hwloc       portable abstraction of hierarchical archetectures
-                lstopo
-cpupowerutils cpu power management utils
-                turbostat
-                powertop
-                cpupower
-
-# Development type tools
-rpm-build   Scripts and executable programs used to build packages
-rpm-devel   Development files to manipulate RPM packages
-valgrind    a suite of tools to debug and profile programs
-tuna        Application tuning GUI & command line utility
-ltrace      Library call tracer
-strace      system call and signal tracer
-
-#The psacct or acct package provides several features fer monitoring process activities.
-ac          command prints the statistics of user logins/logouts (connect time) in hours.
-                useful options: --daily-totals --individual-totals
-lastcomm    command prints the information of previously executed commands of user.
-accton      commands is used to turn on/off process fer accounting.
-sa          command summarizes information of previously executed commands.
-last; lastb commands show listing of last logged in users
-
+### Network monitor
+# ss      another utility to investigate sockets
+# ntop    network traffic probe similar to the UNIX top command
+# iftop   network top
+# ifstat  network iostat
+# nload   A tool can monitor network traffic and bandwidth usage in real time
+# jnettop more detailed iftop
+# nicstat prints out network statistics fo all network interface
+# mtr     more powerful traceroute
+# vnstat  Console-based network traffic monitor
+# bmon    bandwidth monitor
+# nmap    Network exploration tool and security / port scanner
+# ndiff   show differneces in nmap scans
+# nethogs network top
+# arpwatch    Network monitoring tools to track IP addresses on a network
+# tcptrack    Displays information about tcp connections on a network interface
+# iptraf-ng   console-based network monitoring utility (or just 'iptraf')
+# tcpflow     capture data transmitted over tcp connections
+#                 try: /usr/local/bin/tcpflow -F Tc -e http -i any -o tmp/sat -g port 80
+# ifstatus    graphical ifstat
+# dropwatch   kernel dropped packet monitoring utility
+# ibmonitor   interactive bandwidth monitor
+# biosdevname give BIOS-given name of a device -- try: biosdevname -i eth0
+# monitorix   free, open source, lightweight system monitoring tool
+#
+### Security
+# suricata    Intrusion Detection System
+# dsniff      Tools fer network auditing and penetration testing
+# fwsnort     Translates Snort rules into equivalent iptables rules
+# httpry      A specialized packet sniffer designed fer displaying and logging
+# netcat (nc) Reads and writes data across network connections using TCP or UDP
+# netsed      A tool to modify network packets
+# netsniff-ng A high performance network sniffer fer packet inspection
+# ngrep       Network layer grep tool
+# nmap        Network exploration tool and security scanner
+# scapy       Interactive packet manipulation tool and network scanner
+# ssldump     An SSLv3/TLS network protocol analyzer
+# tcpdump     A network traffic monitoring tool
+# traceroute  Traces the route taken by packets over an IPv4/IPv6 network
+# tcpick      A tcp stream sniffer, tracker and capturer
+# tcpreplay   Replay captured network traffic
+# tcpxtract   Tool fer extracting files from network traffic
+# wireshark   Network traffic analyzer Network traffic analyzer
+# lynis       Security and system auditing tool (http://cisofy.com/lynis)
+# aide        Intrusion detection environment
+# tripwire    IDS (Intrusion Detection System)
+#
+### Packages
+# systemtap   a system-wide instrumentation scripting tool
+#                 stap
+# sendmail-cf needed to generate sendmail.cf files
+# yum-utils   collection of yum utilites
+# psmisc      Utilities to manage processes on your system
+#                 pstree
+#                 killall
+#                 fuser
+# net-snmp    SNMP tools & libraries
+# net-snmp-utils  Network management utilities using SNMP
+#                 snmpstatus  try: snmpstatus -c public -v 1 localhost
+#                 snmpwalk    try: snmpwalk -c public -v 1 localhost
+# sg3_utils   SCSI command set utils
+#                 rescan-scsi-bus.sh
+# hwloc       portable abstraction of hierarchical archetectures
+#                 lstopo
+# cpupowerutils cpu power management utils
+#                 turbostat
+#                 powertop
+#                 cpupower
+#
+### Development type tools
+# rpm-build   Scripts and executable programs used to build packages
+# rpm-devel   Development files to manipulate RPM packages
+# valgrind    a suite of tools to debug and profile programs
+# tuna        Application tuning GUI & command line utility
+# ltrace      Library call tracer
+# strace      system call and signal tracer
+#
+###The psacct or acct package provides several features fer monitoring process activities.
+# ac          command prints the statistics of user logins/logouts (connect time) in hours.
+#                 useful options: --daily-totals --individual-totals
+# lastcomm    command prints the information of previously executed commands of user.
+# accton      commands is used to turn on/off process fer accounting.
+# sa          command summarizes information of previously executed commands.
+# last; lastb commands show listing of last logged in users
+#
 ################################################################################
 ## STUFF TO INSTALL
 # Useful utilities and packages to have installed (see above for more info)
@@ -668,7 +700,7 @@ yum -y install vim git etckeeper
 # These require EPEL
 yum -y install atop autojump autojump-zsh bmon git-all htop ifstat ifstatus iftop
 yum -y install ibmonitor jnettop mosh multitail ncdu nethogs ntop sysdig tcptrack
-yum -y install inxi glances
+yum -y install inxi glances ShellChecker
 # On physical
 yum -y install cpupowerutils powertop i7z
 ################################################################################
@@ -676,6 +708,9 @@ yum -y install cpupowerutils powertop i7z
 dnf -y install freemind icedtea-web p7zip p7zip-plugins diffuse fuse-sshfs
 dnf -y install remmina "remmina-plugins-*" wireshark wireshark-gtk alacarte
 dnf -y install krb5-workstation krb5-auth-dialog dia "dia-*" gimp
+# For extra 'luxery' packages (not an admin vm)
+dnf -y install http://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm
+dnf -y install http://download1.rpmfusion.org/free/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm
 # On physical/multi-media systems
 dnf -y install pulseaudio-equalizer pulseaudio-qpaeq mplayer beep
 # on Gnome systems
@@ -685,11 +720,10 @@ dnf -y install xclip
 # Improved font handling (involves adding new repo and replacing some system packages)
 #   see: https://danielrenninghoff.com/2015/11/22/infinality-ultimate-bundle-packaged-for-fedora/
 dnf -y install http://rpm.danielrenninghoff.com/infinality/fedora/$(rpm -E %fedora)/noarch/infinality-ultimate-repo-$(rpm -E %fedora)-1.noarch.rpm
-dnf -y install --allowerasing cairo-infinality-ultimate fontconfig-infinality-ultimate freetype-infinality-ultimate fontconfig-infinality-ultimate-devel freetype-infinality-ultimate-devel
-dnf -y install --allowerasing  ibfonts-meta-base ibfonts-meta-extended-lt ibfonts-meta-extended
-dnf -y install --allowerasing  dejavu-ib-fonts-common dejavu-ib-sans-fonts dejavu-ib-sans-mono-fonts dejavu-ib-serif-fonts abattis-cantarell-ib-fonts cairo-infinality-ultimate-gobject
-dnf -y install --allowerasing  google-crosextra-caladea-ib-fonts google-crosextra-carlito-ib-fonts google-noto-ib-fonts texlive-tex-gyre-ib urw-ib-fonts
-dnf -y install --allowerasing  lohit-odia-ib-fonts lohit-gurmukhi-ib-fonts liberation-ib-fonts-common liberation-ib-mono-fonts liberation-ib-narrow-fonts liberation-ib-sans-fonts liberation-ib-serif-fonts
+dnf -y install --allowerasing fontconfig-infinality-ultimate freetype-infinality-ultimate ibfonts-meta-base urw-ib-fonts cairo-infinality-ultimate abattis-cantarell-ib-fonts.noarch
+#   For a full-blown desktop systme, you may also want lots'o'fonts:
+dnf -y install --allowerasing ibfonts-meta-extended ibfonts-meta-extended-lt
+#   As well as perhaps others...
 # This setting is specifically to allow Firefox to run plugins on a SELinux enabled system:
 setsebool -P unconfined_mozilla_plugin_transition 0
 ################################################################################
