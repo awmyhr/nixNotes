@@ -475,6 +475,23 @@ find . -type f -size 0| xargs -0 rm
 # check how long the last boot took. blame will show each startup item
 systemd-analyze [blame]
 
+################################################################################
+## Some random and desktop stuff
+# list of modifier keys
+xmodmap
+# full(ish) list of keycodes
+xmodmap -pke
+# general info about window manager
+wmctrl -m
+# list [windows|desktops]
+wmctrl [-l|-d]
+# get wm details about a specific window (will wait for you to click on a window)
+xprop
+# send notifications to the desktop
+notify-send
+# work with physical screens (single or multiple)
+xrandr
+
 ###############################################################################
 ## VMWare stuff ###############################################################
 # check entropy - this will typically be low (below 500) as VMWare doesn't provide hardware entropy
