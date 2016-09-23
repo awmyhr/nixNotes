@@ -30,7 +30,7 @@ dracut -H -f
 reboot
 ################################################################################
 #Don't forget to create the mount points on all nodes
-# The mountpoints should be "chown root:root" and "chmod 555"
+# The mountpoints should be "chown root:root" and "chmod 755"
 # this will help ensure no data is written to the non-active node
 #
 #Each node should have static IPs, and all nodes should be listed in all /etc/hosts files
