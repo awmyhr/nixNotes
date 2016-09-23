@@ -343,7 +343,8 @@ nmap -sA <hostname>
 # scan fw protected host
 nmap -PN <hostname>
 # scan working servers/devices on a network
-nmap -sP <subnet>
+nmap -sn <subnet>
+# Example: nmap -sn  10.0.1.0/24
 # reason port is in a state
 nmap --reason <hostname>
 # show host interfaces and routes
