@@ -54,28 +54,56 @@
 #    version   Show the docker version information
 #    wait      Block until a container stops, then print its exit code
 ################################################################################
+# build an image (be in directory with Dockerfile)
+docker build -t <ImageName> .
+
 # list running containers
 docker ps
 # list all containers
 docker ps -a
+# get latest container ID
+docker ps -l -q
+# get container IP
+docker inspect --format '{{ .NetworkSettings.IPAddress }}' <containerID>
 
 # stop and remove a single container:
 docker stop <containerID> && docker rm <containerID>
 # Stop and remove ALL containers:
 docker stop $(docker ps -a -q) && docker rm $(docker ps -a -q)
+
 ################################################################################
-# remove a image
+# remove an image
 docker rmi <imageID>
 
 ################################################################################
-# run arbitrary command in a new container (interactive session)
-docker run -it [--name <name>] <imageID> <command>
+#### docker run common flags
+#   -a      Attach the console to the process’s STDIN, STDOUT or STDERR
+#   -d      Detached mode (i.e., run in background)
+#   -h      Sets container's hostname
+#   -i      Keep STDIN open even if not attached
+#   -t      Allocate a pseudo-TTY
+#   -P      Publish all exposed ports to random ports on the host interfaces
+#   -v      Create a bind mount.
+#   --name  Assign a name to the container (to use instead of UUID)
+#   --privileged    Give extended privileges to this container
+#   --rm    Automatically remove the container when it exits (incompatible w/-d)
+################################################################################
+# run arbitrary command in a new container & give it a name (interactive session)
+docker run -it --name <name> <imageID> <command>
 # run a container and remove it when done:
-docker run --rm [-it] <imageID> [<command>]
+docker run --rm <imageID> [<command>]
+# Run container using directory on host
+docker run -v <hostDir>:<contDir> <imageID> <command>
 
-# build an image (be in directory with Dockerfile)
-docker build -t <ImageName> .
-
+################################################################################
+### notes on attaching volumes (-v|--volume[=[[HOST-DIR:]CONTAINER-DIR[:OPTIONS]]])
+# If you specify, -v /HOST-DIR:/CONTAINER-DIR, Docker bind mounts /HOST-DIR 
+#   in the host to /CONTAINER-DIR in the Docker container. If 'HOST-DIR' 
+#   is omitted, Docker automatically creates the new volume on the host,
+#   however CONTAINER-DIR must exist. Common options are :rw :ro
+# There may be issues with selinux interaction between host/container. Use this
+#   on the host to give container permissions
+chcon -Rt svirt_sandbox_file_t <hostDir>
 
 ################################################################################
 # start container w/X11 redirect (haven't gotten this to work yet)
