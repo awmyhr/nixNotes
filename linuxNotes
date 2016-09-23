@@ -325,6 +325,11 @@ dstat --cpu --mem-adv --swap --page --net --net-packets --disk -D total,sda,sdb,
 dstat --top-bio-adv --top-io-adv --top-cpu-adv --top-mem --top-oom
 # Process resource usage
 dstat --top-bio --top-io --top-cpu --top-cputime --top-cputime-avg --top-mem --top-latency --top-latency-avg
+
+# pmap (process memory usage) examples
+# report memory map of a process
+pmap -d <pid>
+
 ################################################################################
 # some nmap examples - in most cases hostname can be replaced w/ip or subnet
 #   see also: http://www.cyberciti.biz/networking/nmap-command-examples-tutorials/
@@ -406,7 +411,7 @@ sar -q
 # More: http://www.2daygeek.com/sar-command-examples/
 
 ################################################################################
-# rpm/yum/dnf examples
+# rpm examples
 # View the Changelog
 rpm -q --changelog <packagename> | less
 # Where's the Documentation?
@@ -420,38 +425,47 @@ rpm -qa --last | less
 rpm2cpio <packagename>.rpm | cpio -idmv
 # Extract just one File
 rpm2cpio <packagename>.rpm |cpio -ivd <path>/<filename>
-# repo priority (broken?)
-sed -n -e "/^/h; /priority *=/{ G; s/\n/ /; s/ity=/ity = /; p }" /etc/yum.repos.d/*.repo | sort -nk3
-# Some ways to find value of yum variables
-python -c 'import yum, pprint; yb = yum.YumBase(); pprint.pprint(yb.conf.yumvar, width=1)'
-yum version nogroups
-# create repodata information
-createrepo --update --basedir /path/to/repo/ -c /path/to/repo/.cache /path/to/repo/
-# list files in package from yum repo (first two require yum-utils)
-repoquery -l <packagename>
-repoquery -lq --installed <packagename>
-dnf repoquery -l <packagename>
 # list installed rpms by size
 rpm -qa --queryformat="%{NAME} %{SIZE}\n" | sort -k 2 -n
+################################################################################
+# yum/dnf/apk/repo examples
+# list repositories
+[dnf|yum] repolist
+cat /etc/apk/repositories
+# repo priority (broken? not useful?)
+sed -n -e "/^/h; /priority *=/{ G; s/\n/ /; s/ity=/ity = /; p }" /etc/yum.repos.d/*.repo | sort -nk3
+# Find value of some yum variables (can't find equivs)
+python -c 'import yum, pprint; yb = yum.YumBase(); pprint.pprint(yb.conf.yumvar, width=1)'
+# create repodata information
+createrepo --update --basedir /path/to/repo/ -c /path/to/repo/.cache /path/to/repo/
 # list files installed from a specific repo
 dnf repository-packages <repo> list installed
 
-# pmap (process memory usage) examples
-# report memory map of a process
-pmap -d <pid>
+# List installed packages
+[dnf|yum] list installed
+apk [-vv] info
+# List package providing file
+[dnf|yum] provides <fullpathtofile>
+apk info --who-owns <fullpathtofile>
+# list package dependencies
+yum deplist <packagename>
+dnf repoquery --requires <packagename>
+apk info -a <packagename>
+# list files in package (first two require yum-utils)
+repoquery -l <packagename>
+repoquery -lq --installed <packagename>
+dnf repoquery -l <packagename>
+apk info -a <packagename>
 
 # list [summary|list|info] about update advisories (defaults to summary)
 yum updateinfo [summary|list|info] [security] [installed|available|all] [pkgs|id]
 dnf updateinfo [summary|list|info] [security] [installed|available|all] [pkgs|id]
-# mark a package as having been installed by user
-dnf mark install <packagename>
 # list of packages extras (stuff not in repos), obsoletes, recent (pkgs recently added),
 #       upgrades, autoremove (pkgs would be removed w/'dnf autoremove')
 yum list [<packagename>|all|installed|extras|obsoletes|recent|updates]
 dnf list [<packagename>|all|installed|extras|obsoletes|recent|upgrades|autoremove]
-# list package dependencies
-yum deplist <packagename>
-dnf repoquery --requires <packagename>
+# mark a package as having been installed by user
+dnf mark install <packagename>
 
 ################################################################################
 # find examples
