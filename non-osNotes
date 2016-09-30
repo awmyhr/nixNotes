@@ -70,10 +70,20 @@ gpg --with-fingerprint keyname
 # capture interface (eth0) for duration (10 seconds) and report info on port (80)
 tshark -f 'tcp port 80 and tcp[tcpflags] & (tcp-syn) !=0 and tcp[tcpflags] & (tcp-ack) = 0' -n -q -z io,stat,1 -i eth0 -a "duration:10"
 ################################################################################
-#
-#
-#
+## sysdig stuff (most this needs to be done as root)
+# Dump system activity to file, so that sysdig can be used to process it later.
+sysdig -w trace.scap
+# View the top network connections for a single container.
+sysdig -pc -c topconns container.name=wordpress1
+# See the files where apache spends the most time doing I/O.
+sysdig -c topfiles_time proc.name=httpd
+# Show all the interactive commands executed inside a given container.
+sysdig -pc -c spy_users container.name=wordpress1
+# Show every time a file is opened under /etc.
+sysdig evt.type=open and fd.name contains /etc
+# Find a *lot* more here: http://www.sysdig.org/wiki/sysdig-examples/
 ################################################################################
+##
 
 
 
