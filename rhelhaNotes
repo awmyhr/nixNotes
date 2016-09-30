@@ -1,4 +1,5 @@
 #!/bin/bash NOT A REAL SHELL SCRIPT!
+# [SublimeLinter shellcheck-exclude:"SC2086" ]
 # This is a cut'n'paste scriptlet
 # be sure to read & understand what you're cutting & pasting!
 #
@@ -47,7 +48,7 @@ chkconfig corosync off
 sed -i -e '/EXCEPT/ s/root/root hacluster/' /etc/security/access.conf;
 echo ${PASSWD} | passwd --stdin hacluster
 chkconfig pcsd on && service pcsd start
-pcs cluster auth ${NODE0} ${NODE0} ${NODEX} 
+pcs cluster auth ${NODE0} ${NODEX} 
 #
 # In some cases multicast must be turned off and Unicast should be used
 #   set "cman trasnport="udpu" in the line:
@@ -148,9 +149,10 @@ pcs resource update ${NAME_RESOURCE} op ${SETTING} ${OPTION}=${VALUE}
 pcs resource clone ${NAME_RESOURCE}
 pcs resource create ${PARAMATERS} --clone
 ################################################################################
-#Additional steps for custom resources:
-# Create <custom> resource directory, copy file in, set permissions/ownership
-# Note: typically ${CUSTOM} is company/organization name
+# Additional steps for custom resources:
+#   Create <custom> resource directory, copy file in, set permissions/ownership
+#   the non-pcs portion needs to be done on both nodes
+#   Note: typically ${CUSTOM} is company/organization name
 #   and ${RESOURCE_SCRIPT} is same as the desired resource type name
 mkdir /usr/lib/ocf/resource.d/${CUSTOM}
 cp    ${RESOURCE_SCRIPT} /usr/lib/ocf/resource.d/${CUSTOM}/${RESOURCE_SCRIPT}
@@ -162,7 +164,7 @@ pcs resource describe ocf:${CUSTOM}:${RESOURCE_SCRIPT}
 # create resource, but don't monitor
 pcs resource create ${NAME_RESOURCE} ${RESOURCE_SCRIPT} op monitor enabled=false on-fail=ignore --group ${NAME_GROUP}
 ################################################################################
-#Controlling the cluster daemons:
+# Controlling the cluster daemons:
 # on/start
 chkconfig pcsd on       && service pcsd start
 chkconfig pacemaker on  && service pacemaker start
@@ -172,9 +174,9 @@ chkconfig pacemaker off && service pacemaker stop
 chkconfig pcsd off      && service pcsd stop
 service pacemaker stop  && service pcsd stop
 ################################################################################
-#Example resource creation for an Oracle cluster
-# Note: resources added in a group are tacked onto the end
-#       group implies colocation, order, and required all
+# Example resource creation for an Oracle cluster
+#   Note: resources added in a group are tacked onto the end
+#   group implies colocation, order, and required all
 # VIP
 pcs resource create oravip       IPaddr2    ip=192.168.100.200 cidr_netmask=24 --group oracle
 # Filesystems
