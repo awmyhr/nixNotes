@@ -433,7 +433,7 @@ rpm -qa --queryformat="%{NAME} %{SIZE}\n" | sort -k 2 -n
 # list repositories
 [dnf|yum] repolist
 cat /etc/apk/repositories
-# repo priority (broken? not useful?)
+# repo priority (broken? not useful?) -- don't mess with this
 sed -n -e "/^/h; /priority *=/{ G; s/\n/ /; s/ity=/ity = /; p }" /etc/yum.repos.d/*.repo | sort -nk3
 # Find value of some yum variables (can't find equivs)
 python -c 'import yum, pprint; yb = yum.YumBase(); pprint.pprint(yb.conf.yumvar, width=1)'
@@ -455,7 +455,7 @@ apk info -a <packagename>
 # list files in package (first two require yum-utils)
 repoquery -l <packagename>
 repoquery -lq --installed <packagename>
-dnf repoquery -l <packagename>
+dnf repoquery --list <packagename>
 apk info -a <packagename>
 
 # list [summary|list|info] about update advisories (defaults to summary)
@@ -465,6 +465,9 @@ dnf updateinfo [summary|list|info] [security] [installed|available|all] [pkgs|id
 #       upgrades, autoremove (pkgs would be removed w/'dnf autoremove')
 yum list [<packagename>|all|installed|extras|obsoletes|recent|updates]
 dnf list [<packagename>|all|installed|extras|obsoletes|recent|upgrades|autoremove]
+# list capabilities package provides|enhances|obsoletes|recommends
+dnf repoquery --[provides|enhances|obsoletes|recommends] <packagename>
+
 # mark a package as having been installed by user
 dnf mark install <packagename>
 
@@ -688,7 +691,6 @@ tg3                 HP NC-Series Broadcom TG3 Driver
 #                 turbostat
 #                 powertop
 #                 cpupower
-#
 ### Development type tools
 # rpm-build   Scripts and executable programs used to build packages
 # rpm-devel   Development files to manipulate RPM packages
@@ -710,11 +712,15 @@ tg3                 HP NC-Series Broadcom TG3 Driver
 # Useful utilities and packages to have installed (see above for more info)
 yum -y install dstat gpm hwloc iotop iptraf-ng lsof mtr ps_mem yum-utils
 yum -y install psmisc sg3_utils snappy strace systemtap tmux util-linux
-yum -y install vim git etckeeper
+yum -y install vim git etckeeper moreutils
 # These require EPEL
 yum -y install atop autojump autojump-zsh bmon git-all htop ifstat ifstatus iftop
-yum -y install ibmonitor jnettop mosh multitail ncdu nethogs ntop sysdig tcptrack
-yum -y install inxi glances ShellChecker
+yum -y install ibmonitor jnettop mosh multitail ncdu nethogs ntop tcptrack
+yum -y install inxi glances ShellCheck
+# sysdig is kewl, but exclusive
+rpm --import https://s3.amazonaws.com/download.draios.com/DRAIOS-GPG-KEY.public
+curl -s -o /etc/yum.repos.d/draios.repo http://download.draios.com/stable/rpm/draios.repo
+yum -y install sysdig
 # On physical
 yum -y install cpupowerutils powertop i7z
 ################################################################################
@@ -730,7 +736,7 @@ dnf -y install pulseaudio-equalizer pulseaudio-qpaeq mplayer beep
 # on Gnome systems
 dnf -y install gconf-editor gnome-tweak-tool dconf-editor
 # on i3wm systems
-dnf -y install xclip 
+dnf -y install xclip dunst feh scrot
 # Improved font handling (involves adding new repo and replacing some system packages)
 #   see: https://danielrenninghoff.com/2015/11/22/infinality-ultimate-bundle-packaged-for-fedora/
 dnf -y install http://rpm.danielrenninghoff.com/infinality/fedora/$(rpm -E %fedora)/noarch/infinality-ultimate-repo-$(rpm -E %fedora)-1.noarch.rpm
