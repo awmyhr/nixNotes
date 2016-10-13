@@ -497,7 +497,7 @@ systemd-analyze [blame]
 ## Some random and desktop stuff
 # list of modifier keys
 xmodmap
-# full(ish) list of keycodes
+# full(ish) list of current key mappings
 xmodmap -pke
 # general info about window manager
 wmctrl -m
@@ -509,6 +509,10 @@ xprop
 notify-send
 # work with physical screens (single or multiple)
 xrandr
+# print contents of X events (like keypress)
+xev
+# examine the codes sent by the keyboard
+showkey
 
 ###############################################################################
 ## VMWare stuff ###############################################################
