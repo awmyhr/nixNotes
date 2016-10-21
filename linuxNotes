@@ -537,36 +537,36 @@ hponcfg -f /tmp/ilo
 # normally install these packages:
 yum install hpacucli hp-smh-templates hpacucli hpdiags hponcfg hpsmh hpssacli hpsum
 
-# Utilities
-cpqacuxe            HP Array Configuration Utility (web-based)
-fibreutils          HP StorageWorks Fibre Channel HBA Fibreutils
-hp-ams              HP ProLiant Gen8 Systems Agentless Monitoring Service
-hp-cnu              HP Converged Network Utility
-hp-health           HP System Health Application and Command Line Utilities
-hp-smh-templates    HP System Management Homepage
-hp-snmp-agents      HP SNMP Agents
-hpacucli            HP Array Configuration Utility CLI
-hpadu               HP Array Diagnostics Utility
-hpdiags             HP Insight Diagnostics Online Edition
-hpmouse             HP iLO2 High-Performance Mouse X driver
-hponcfg             HP Lights-Out Online Configuration Utility
-hpsmh               HP System Management Homepage
-hpss                HP Smart Storage Administrator
-hpssacli            HP Command Line Smart Storage Administrator
-hpsum               Useful fer firmware updates 
-hpvca               HP Version Control Agent
-
-#Drivers
-# NOTE: I've heard RedHat's built-in drivers are kept up-to-date w/HP's,
-#           thus it may not be necessary to use these...
-bnx2                HP NC-Series Broadcom 1Gb Multifunction Driver
-bnx2x               HP NC-Series Broadcom 10Gb Multifunction Driver
-e1000               HP NC-Series Intel Driver
-hplip               HP Linux Imaging and Printing drivers
-hp-lpfc             HP Linux Emulex based Fibre Channel HBAs driver kit
-hp_qla              HP StorageWorks QLogic Fibre Channel Driver
-tg3                 HP NC-Series Broadcom TG3 Driver
-
+## Utilities
+# cpqacuxe            HP Array Configuration Utility (web-based)
+# fibreutils          HP StorageWorks Fibre Channel HBA Fibreutils
+# hp-ams              HP ProLiant Gen8 Systems Agentless Monitoring Service
+# hp-cnu              HP Converged Network Utility
+# hp-health           HP System Health Application and Command Line Utilities
+# hp-smh-templates    HP System Management Homepage
+# hp-snmp-agents      HP SNMP Agents
+# hpacucli            HP Array Configuration Utility CLI
+# hpadu               HP Array Diagnostics Utility
+# hpdiags             HP Insight Diagnostics Online Edition
+# hpmouse             HP iLO2 High-Performance Mouse X driver
+# hponcfg             HP Lights-Out Online Configuration Utility
+# hpsmh               HP System Management Homepage
+# hpss                HP Smart Storage Administrator
+# hpssacli            HP Command Line Smart Storage Administrator
+# hpsum               Useful fer firmware updates 
+# hpvca               HP Version Control Agent
+#
+## Drivers
+##  NOTE: I've heard RedHat's built-in drivers are kept up-to-date w/HP's,
+##           thus it may not be necessary to use these...
+# bnx2                HP NC-Series Broadcom 1Gb Multifunction Driver
+# bnx2x               HP NC-Series Broadcom 10Gb Multifunction Driver
+# e1000               HP NC-Series Intel Driver
+# hplip               HP Linux Imaging and Printing drivers
+# hp-lpfc             HP Linux Emulex based Fibre Channel HBAs driver kit
+# hp_qla              HP StorageWorks QLogic Fibre Channel Driver
+# tg3                 HP NC-Series Broadcom TG3 Driver
+#
 ###############################################################################
 ## USEFUL COMMANDS ############################################################
 ### General
@@ -574,6 +574,7 @@ tg3                 HP NC-Series Broadcom TG3 Driver
 # gpm     console mouse, useful to wake console without pushing a key
 # git-all good enough version control
 # git-extras  additional commands fer git
+# gitflow tools to make using git even better
 # snappy  lazy-fast compression
 # ncdu    graphical (console) du
 # tmux    multiple, detachable remote term
