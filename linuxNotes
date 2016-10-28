@@ -570,25 +570,26 @@ yum install hpacucli hp-smh-templates hpacucli hpdiags hponcfg hpsmh hpssacli hp
 ###############################################################################
 ## USEFUL COMMANDS ############################################################
 ### General
-# pv      monitor the progress of data through a pipeline
-# gpm     console mouse, useful to wake console without pushing a key
-# git-all good enough version control
+# apropos   search the manual page names and descriptions
+# autojump  keeps database of past directories fer easy cd into them 
+# colordiff wrapper fo diff and produces the same output but with pretty syntax highlighting.
+# git-all   good enough version control
 # git-extras  additional commands fer git
-# gitflow tools to make using git even better
-# snappy  lazy-fast compression
-# ncdu    graphical (console) du
-# tmux    multiple, detachable remote term
-# mosh    remote terminal application supporting intermittent connectivity
-# inxi    general system information
-# vipw    like visudo excpet /etc/passwed ('-s' does /etc/shadow)
-# setsid  run a program in a new session
-# apropos search the manual page names and descriptions
-# autojump    keeps database of past directories fer easy cd into them 
-# multitail   tail several files at once
-# util-linux-ng   collection of basic system utilities
-# moreutils   isutf8, sponge, ts, vidir, combine, ifdata, pee, zrun, mispipe, lckdo, ifne, and parallel
-# colordiff   wrapper fo diff and produces the same output but with pretty syntax highlighting.
-# ShellChecker lint for shell scripts
+# gitflow   tools to make using git even better
+# gpm       console mouse, useful to wake console without pushing a key
+# inxi      general system information
+# lshw      Hardware lister
+# moreutils isutf8, sponge, ts, vidir, combine, ifdata, pee, zrun, mispipe, lckdo, ifne, and parallel
+# mosh      remote terminal application supporting intermittent connectivity
+# multitail tail several files at once
+# ncdu      graphical (console) du
+# pv        monitor the progress of data through a pipeline
+# setsid    run a program in a new session
+# ShellChecker  lint for shell scripts
+# snappy    lazy-fast compression
+# tmux      multiple, detachable remote term
+# util-linux-ng collection of basic system utilities
+# vipw      like visudo excpet /etc/passwed ('-s' does /etc/shadow)
 #
 ### System monitor
 # dstat   more powerful vmstat (try: dstat -lrvn 10)
@@ -717,7 +718,7 @@ yum install hpacucli hp-smh-templates hpacucli hpdiags hponcfg hpsmh hpssacli hp
 # Useful utilities and packages to have installed (see above for more info)
 yum -y install dstat gpm hwloc iotop iptraf-ng lsof mtr ps_mem yum-utils
 yum -y install psmisc sg3_utils snappy strace systemtap tmux util-linux
-yum -y install vim git etckeeper moreutils
+yum -y install vim git etckeeper moreutils lshw
 # These require EPEL
 yum -y install atop autojump autojump-zsh bmon git-all htop ifstat ifstatus iftop
 yum -y install ibmonitor jnettop mosh multitail ncdu nethogs ntop tcptrack
@@ -732,7 +733,7 @@ yum -y install cpupowerutils powertop i7z
 # These are for a desktop/admin system
 dnf -y install freemind icedtea-web p7zip p7zip-plugins diffuse fuse-sshfs
 dnf -y install remmina "remmina-plugins-*" wireshark wireshark-gtk alacarte
-dnf -y install krb5-workstation krb5-auth-dialog dia "dia-*" gimp
+dnf -y install krb5-workstation krb5-auth-dialog dia "dia-*" gimp lshw-gui
 # For extra 'luxery' packages (not an admin vm)
 dnf -y install http://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm
 dnf -y install http://download1.rpmfusion.org/free/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm
