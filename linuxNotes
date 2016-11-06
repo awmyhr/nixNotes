@@ -584,6 +584,7 @@ yum install hpacucli hp-smh-templates hpacucli hpdiags hponcfg hpsmh hpssacli hp
 # multitail tail several files at once
 # ncdu      graphical (console) du
 # pv        monitor the progress of data through a pipeline
+# screenfetch Similar to inxi, but 'prettier'
 # setsid    run a program in a new session
 # ShellChecker  lint for shell scripts
 # snappy    lazy-fast compression
@@ -722,7 +723,7 @@ yum -y install vim git etckeeper moreutils lshw
 # These require EPEL
 yum -y install atop autojump autojump-zsh bmon git-all htop ifstat ifstatus iftop
 yum -y install ibmonitor jnettop mosh multitail ncdu nethogs ntop tcptrack
-yum -y install inxi glances ShellCheck
+yum -y install inxi glances ShellCheck screenfetch
 # sysdig is kewl, but exclusive
 rpm --import https://s3.amazonaws.com/download.draios.com/DRAIOS-GPG-KEY.public
 curl -s -o /etc/yum.repos.d/draios.repo http://download.draios.com/stable/rpm/draios.repo
