@@ -40,3 +40,13 @@ used as part of the TICK stack.
 
 ## Architecture
 
+### Docker
+
+Official Docker images are available.
+
+https://hub.docker.com/_/telegraf/
+https://hub.docker.com/_/influxdb/
+https://hub.docker.com/_/chronograf/
+https://hub.docker.com/_/kapacitor/
+
+

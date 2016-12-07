@@ -59,3 +59,11 @@ The entire stack can run on a single node. I have also ran multi-node:
     2 search nodes (ElasitcSearch control/search)
     10 data nodes (ElasitcSearch database/storage cluster)
 
+### Docker
+
+Official Docker images are available.
+
+https://hub.docker.com/_/elasticsearch/
+https://hub.docker.com/_/logstash/
+https://hub.docker.com/_/kibana/
+
