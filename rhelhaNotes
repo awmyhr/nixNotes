@@ -47,6 +47,9 @@ chkconfig corosync off
 #add hacluster to /etc/security/access.conf
 sed -i -e '/EXCEPT/ s/root/root hacluster/' /etc/security/access.conf;
 echo ${PASSWD} | passwd --stdin hacluster
+# NOTE: user hacluster (uid 189) and group haclient (gid 189) should be added
+#   to the ignore directives of any network-based authentication client (such
+#   as Centrify)
 chkconfig pcsd on && service pcsd start
 pcs cluster auth ${NODE0} ${NODEX} 
 #

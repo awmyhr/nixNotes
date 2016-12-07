@@ -3,7 +3,7 @@
 # be sure to read & understand what you're cutting & pasting!
 #
 # ISO date stamp
-`date +%Y%m%d-%H%M`
+$(date +%Y%m%d-%H%M)
 ################################################################################
 ### Some VM settings:
 # Display RAM: Server 9M; Desktop 64MB
@@ -441,6 +441,7 @@ python -c 'import yum, pprint; yb = yum.YumBase(); pprint.pprint(yb.conf.yumvar,
 createrepo --update --basedir /path/to/repo/ -c /path/to/repo/.cache /path/to/repo/
 # list files installed from a specific repo
 dnf repository-packages <repo> list installed
+yumdb search from_repo <repo>
 
 # List installed packages
 [dnf|yum] list installed
@@ -787,5 +788,6 @@ chkconfig -list
 #dd if=/dev/zero of=PhysicalVolume bs=512 count=1
 # WARNING!! HIGHLY DESTRUCTIVE!! WARNING!! #####################################
 ################################################################################
+
 
 
