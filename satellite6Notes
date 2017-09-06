@@ -1,0 +1,426 @@
+#------------------------------------------------------------------------------
+#-- NOTE: This document was compiled running Satellite 6.2.4 on RHEL 7.3
+#         It is assumed clients are RHEL6 or RHEL7. Client-side service
+#         commands will use the legacy chkconfig/service for this reason
+#         *unless* the command is only ever expected to run on RHEL7.
+#         This *will* trigger warnings on RHEL7 systems related to using
+#         systemctl, but those can be safely ignored.
+#-- NOTE: This document assumes Puppet will *not* be used. However, there are
+#         some puppet notes in the section "Puppet Notes"
+#-- NOTE: If >225 clients, check this article for scaling katello-agent:
+#         https://access.redhat.com/solutions/1375253
+#------------------------------------------------------------------------------
+#-- Variables to use for examples
+#------------------------------------------------------------------------------
+BACKUP_DIR='Generic variable for actual backup directory'
+FULL_BACKUP_DIR='Generic variable for actual full backup directory'
+INC_BACKUP_DIR='Generic variable for actual inctremental backup directory'
+POOL_ID='Pool ID taken from output of list command'
+PRODUCT_ID='Product ID taken from output of list command'
+REPO_ID='Repo ID taken from output of list command'
+SAT5_SERVER=''
+SAT5_USER='Satellite 5 user to execute command as'
+SAT6_ADMIN_FNAME='First name of initial user to create on Satellite 6 install'
+SAT6_ADMIN_LNAME='Last name of initial user to create on Satellite 6 install'
+SAT6_ADMIN_PASS='Initial user password to create on Satellite 6 install'
+SAT6_ADMIN_USER='Initial user name to create on Satellite 6 install'
+SAT6_AK_DEFAULT='Default activation key to use for Satellite 6'
+SAT6_BACKUPS='Location to hold Satellite 6 data backups'
+SAT6_INIT_LOC='Initial location to create on Satellite 6 install'
+SAT6_INIT_ORG='Initial organization to create on Satellite 6 install'
+SAT6_LOC='Satellite 6 location to execute commands in'
+SAT6_ORG='Satellite 6 organization to execute commands in'
+SAT6_PASS='Password for SAT6_USER'
+SAT6_SERVER='FQDN of Satellite 6 server'
+SAT6_URL='Satellite 6 URL complete with http://'
+SAT6_USER='Satellite 6 user to execute command as'
+SAT6_VIRTWHO_HASH='Hash of password virt-who will use to log into Satellite'
+SAT6_VIRTWHO_PASS='Password virt-who will use to log into Satellite'
+SAT6_VIRTWHO_USER='User virt-who will use to log into Satellite'
+SAT6_VMWARE_HASH='Hash of VMWare password Satellite/virt-who will use'
+SAT6_VMWARE_PASS='VMWare password Satellite/virt-who will use'
+SAT6_VMWARE_USER='VMWare user Satellite/virt-who will use'
+TEMPLATE_FILE='Template file hammer will import into Satellite'
+VCENTER_IP='IP address of vCenter virt-who will log into'
+#------------------------------------------------------------------------------
+#-- Register Satellite
+#------------------------------------------------------------------------------
+subscription-manager register
+subscription-manager list --available --matches 'Red Hat Satellite'
+#-- You need the "Pool ID:"
+subscription-manager attach --pool="${POOL_ID}"
+#-- to conifrm
+subscription-manager list --consumed
+subscription-manager repos --disable "*"
+subscription-manager repos --enable=rhel-7-server-rpms \
+                           --enable=rhel-server-rhscl-7-rpms \
+                           --enable=rhel-7-server-satellite-6.2-rpms
+yum clean all && yum repolist enabled
+#------------------------------------------------------------------------------
+#-- Install Satellite
+#-- Install virt-who (to interact directly with hypervisors)
+#   REF: https://access.redhat.com/documentation/en/red-hat-satellite/6.2/html/virtual-instances-guide
+#------------------------------------------------------------------------------
+yum -y update && yum -y install satellite virt-who
+satellite-installer --scenario satellite \
+                    --foreman-admin-first-name     "${SAT6_ADMIN_FNAME}" \
+                    --foreman-admin-last-name      "${SAT6_ADMIN_LNAME}" \
+                    --foreman-admin-password       "${SAT6_ADMIN_PASS}" \
+                    --foreman-admin-username       "${SAT6_ADMIN_USER}" \
+                    --foreman-initial-location     "${SAT6_INIT_LOC}" \
+                    --foreman-initial-organization "${SAT6_INIT_ORG}"
+#------------------------------------------------------------------------------
+#-- Setup for easier hammer usage
+#   REF: https://access.redhat.com/documentation/en/red-hat-satellite/6.2/html/hammer-cli-guide
+#-- Hammer cheat sheet: https://access.redhat.com/articles/2258471
+#------------------------------------------------------------------------------
+mkdir "${HOME}/.hammer" && chmod 700 "${HOME}/.hammer"
+cat >"${HOME}/.hammer/cli_config.yml" <<EOF
+:foreman:
+  :host: 'https://${SAT6_SERVER}/'
+  :username: '${SAT6_USER}'
+  :password: '${SAT6_PASS}'
+EOF
+chmod 600 "${HOME}/.hammer/cli_config.yml"
+hammer defaults add --param-name organization_id --param-value 1
+hammer defaults add --param-name location_id --param-value 1
+#------------------------------------------------------------------------------
+#-- Create base environments & Configure some settings
+#   These commands illustrate a reasonable example setup.
+#------------------------------------------------------------------------------
+hammer lifecycle-environment create --name 'Temporary' --label "temporary" \
+    --description "Temp home for auto-provisioned hosts."   --prior "Library"
+hammer lifecycle-environment create --name 'Monthly'   --label "monthly" \
+    --description "Hosts patched every month."              --prior "Library"
+hammer lifecycle-environment create --name 'LC3 P1'    --label "lc3_p1" \
+    --description "First phase of a quarterly life cycle."  --prior "Library"
+hammer lifecycle-environment create --name 'LC3 P2'    --label "lc3_p2" \
+    --description "Second phase of a quarterly life cycle." --prior "LC3 P1"
+hammer lifecycle-environment create --name 'LC3 P3'    --label "lc3_p3" \
+    --description "Third phase of a quarterly life cycle."  --prior "LC3 P2"
+hammer settings set --name default_download_policy --value on_demand
+#------------------------------------------------------------------------------
+#-- Enabling repos via command line
+#   All static ID numbers here are as of 2016-11-23 and could change
+#------------------------------------------------------------------------------
+#-- Get product ID
+hammer product list | grep "Red Hat Enterprise Linux Server"
+#-- List primary repositories (to get main repo ID)
+hammer repository-set list --product-id "${PRODUCT_ID}"
+#-- Get list of child repositories
+hammer repository-set available-repositories --id "${REPO_ID}" --product-id "${PRODUCT_ID}"
+#-- Generic enable command
+hammer repository-set enable --id "${REPO_ID}" --product-id "${PRODUCT_ID}" --basearch x86_64
+#-- Specific enable commands for RHEL 6 Server (latest) x86_64
+#   in order: Kickstart, ISO ,Base , Optional, Supplementary, Extra, Sat Tools 6.2
+hammer repository-set enable --id  164 --product-id 9 --releasever 6Server --basearch x86_64
+hammer repository-set enable --id  168 --product-id 9 --releasever 6Server --basearch x86_64
+hammer repository-set enable --id  166 --product-id 9 --releasever 6Server --basearch x86_64
+hammer repository-set enable --id 1673 --product-id 9 --releasever 6Server --basearch x86_64
+hammer repository-set enable --id 3026 --product-id 9 --basearch x86_64
+hammer repository-set enable --id 4792 --product-id 9 --basearch x86_64
+#-- Specific enable commands for RHEL 7 Server (latest) x86_64
+#   in order: ISO, Kickstart ,Base , Optional, Supplementary, Extra, Sat Tools 6.2
+hammer repository-set enable --id 2454 --product-id 9 --releasever 7Server --basearch x86_64
+hammer repository-set enable --id 2456 --product-id 9 --releasever 7Server --basearch x86_64
+hammer repository-set enable --id 2463 --product-id 9 --releasever 7Server --basearch x86_64
+hammer repository-set enable --id 2476 --product-id 9 --releasever 7Server --basearch x86_64
+hammer repository-set enable --id 3030 --product-id 9 --basearch x86_64
+hammer repository-set enable --id 4831 --product-id 9 --basearch x86_64
+#-- Specific enable commands for RH Satellite 6.2 for RHEL7
+hammer repository-set enable --id 4743 --product-id 10 --basearch x86_64
+#------------------------------------------------------------------------------
+#-- Migrating a client from Sat5 to Sat6
+#-- REF: https://access.redhat.com/solutions/1233443
+#------------------------------------------------------------------------------
+#-- NOTE: I made a script 'repo_pkg_count' which will help identify channels
+#         actually used by a host. This is useful to avoid subscribing to
+#         channels just because the system was subscribed to them before.
+#-- Need to install/update these first
+yum -y install subscription-manager subscription-manager-migration-* 
+yum -y update yum openssl
+yum -y install "${SAT6_URL}/pub/katello-ca-consumer-latest.noarch.rpm"
+#-- You will need an ID on both servers which has permissions to do the work
+#-- This next command will:
+#   - Remove system from Sat5
+#   - Disable yum-rhn-plugin
+#   - Remove /etc/sysconfig/rhn/systemid
+#   - Remove old rhn packages
+#   - Install correct certs in /etc/pki/product
+#   - Register w/Sat6
+#   It will ask for both passwords
+rhn-migrate-classic-to-rhsm --force --remove-rhn-packages \
+                            --legacy-user="${SAT5_USER}" \
+                            --destination-user="${SAT6_USER}" \
+                            --environment=Temporary
+#-- To use an activation key on the destination instead of a user login
+rhn-migrate-classic-to-rhsm --force --remove-rhn-packages \
+                            --legacy-user="${SAT5_USER}" \
+                            --activation-key="${SAT6_AK_DEFAULT}"
+#------------------------------------------------------------------------------
+#-- Register a client from Sat5 to Sat6
+#------------------------------------------------------------------------------
+#--Register a system w/activation key
+subscription-manager register --activationkey="${SAT6_AK_DEFAULT}"
+#--Register a system w/o activation key
+subscription-manager register --username="${SAT6_USER}" \
+                              --org="${SAT6_ORG}" \
+                              --environment=Temporary
+#------------------------------------------------------------------------------
+#-- Post register/migration steps
+#------------------------------------------------------------------------------
+#-- Register/migration should reset enabled repos to a bare minimum
+#   If not, this command will:
+subscription-manager repos --enable=rhel-*-server-rpms \
+                           --enable=rhel-*-server-satellite-tools-6.2-rpms
+#-- Installing katello & enabling services
+chkconfig rhsmcertd on && service rhsmcertd restart
+yum -y install katello-agent
+chkconfig goferd on && service goferd restart
+#-- NOTE: There are a few Satellite-side steps after this. For example, moving
+#         the host into the correct environment, has the correct subscriptions,
+#         and other cofigurations.
+#-- remove old RHN stuff if its still around
+yum remove rhn-setup rhn-client-tools yum-rhn-plugin rhnsd rhn-check rhnlib spacewalk-abrt spacewalk-oscap osad 'rh-*-rhui-client'
+#------------------------------------------------------------------------------
+#-- Some troubleshooting steps
+#------------------------------------------------------------------------------
+#-- Check katello-agent is installed
+rpm -q katello-agent
+#-- Check service status
+service goferd status
+service rhsmcertd status
+#-- This series of steps (executed on the client) can address many minor issues,
+#   including when UI still shows yellow/not installed
+subscription-manager refresh \
+  && systemctl restart goferd \
+  && systemctl restart rhsmcertd \
+  && rm -f /var/lib/rhsm/packages/packages.json \
+  && katello-package-upload 
+#-- "Complete" unregister of a system
+service goferd stop && chkconfig goferd off
+service rhsmcertd stop && chkconfig rhsmcertd off
+subscription-manager unregister
+#------------------------------------------------------------------------------
+#-- Some useful commands
+#------------------------------------------------------------------------------
+katello-service list
+katello-service status
+katello-service restart
+#-- Trigger a manifest refresh (--async to not wait for task). Maybe cron this
+hammer subscription refresh-manifest
+#-- Quickly check installed Satellite version from command line (6.2.x):
+rpm -q satellite
+#-- To combine host & host.fully.qualified.domain.name. This tends to happen
+#   after migrating a host which uses a short name then enabling puppet client.
+foreman-rake katello:unify_hosts
+#-- Clean-up old tasks (this displays tasks over 30 days which would be cleaned)
+foreman-rake foreman_tasks:cleanup TASK_SEARCH='label ~ *' AFTER='30d' \
+                                   VERBOSE=true NOOP=true
+#-- To see all options:
+foreman-rake -D foreman_tasks:cleanup
+#-- Vacuum database ('du -sh /var/lib/pgsql/' before and after to verify size)
+katello-service stop && service postgresql start
+su - postgres -c 'vacuumdb -f -d foreman'
+katello-service start
+#-- Updates can be involved, be sure to check release notes
+yum update --downloadonly
+katello-service stop
+yum update
+satellite-installer --scenario satellite --upgrade
+reboot
+#-- Add a new template
+hammer template create --name "Template Name" \
+                       --file "${TEMPLATE_FILE}" \
+                       --type provision \
+                       --organizations "${SAT6_ORG}" \
+                       --locations "${SAT6_LOC}"
+#------------------------------------------------------------------------------
+#-- Backing up (Based on chapter 6 in Server Admin Guide)
+#   REF: https://access.redhat.com/documentation/en/red-hat-satellite/6.2/html/server-administration-guide
+#   NOTE: running the backup will first stop several services & restart when done
+#------------------------------------------------------------------------------
+#-- Full backup needs enough space to hold /etc /var/lib/[pulp|mongodb|pgsql]
+#   Generic command: katello-backup "${BACKUP_DIR}"
+du -hsc /etc /var/lib/pulp /var/lib/mongodb /var/lib/pgsql
+df -h "${SAT6_BACKUPS}"
+katello-backup --online-backup "/${SAT6_BACKUPS}/$(date +%Y%m%d-%H%M).full"
+#-- adding '--online-backup' will bring services back on-line before backing
+#       up pulp data, but care must be taken not to change that data during the 
+#       backup
+#------------------------------------------------------------------------------
+#-- A config-only backup excludes pulp data, but can *not* be used for recovery
+#   Generic command: katello-backup --skip-pulp-content "${BACKUP_DIR}"
+du -hsc /etc /var/lib/mongodb /var/lib/pgsql
+df -h "${SAT6_BACKUPS}"
+katello-backup --skip-pulp-content "/${SAT6_BACKUPS}/$(date +%Y%m%d-%H%M).config"
+#------------------------------------------------------------------------------
+#-- An incremental can be done like this:
+#   Generic command: katello-backup "${INC_BACKUP_DIR}" --incremental "${FULL_BACKUP_DIR}"
+katello-backup "/${SAT6_BACKUPS}/$(date +%Y%m%d-%H%M).inc" --incremental "/${SAT6_BACKUPS}/${FULL_BACKUP_DIR}"
+#------------------------------------------------------------------------------
+#-- Register the Satellite to itself
+#   NOTE: Full discussion can be found in Chapter 3 of Installation Guide
+#   REF: https://access.redhat.com/documentation/en-us/red_hat_satellite/6.2/html/installation_guide
+#------------------------------------------------------------------------------
+subscription-manager remove --all
+subscription-manager unregister
+
+rpm -Uvh /var/www/html/pub/katello-ca-consumer-latest.noarch.rpm
+subscription-manager register --environment=Library
+
+#-- Find the Pool ID for the RH Satellite
+subscription-manager list --available
+subscription-manager attach --pool "${POOL_ID}"
+subscription-manager repos --enable=rhel-7-server-rpms \
+                           --enable=rhel-server-rhscl-7-rpms \
+                           --enable=rhel-7-server-satellite-6.2-rpms \
+                           --enable=rhel-7-server-satellite-tools-6.2-rpms
+
+#-- This should automagically enable & start goferd
+chkconfig rhsmcertd on && service rhsmcertd restart
+yum -y install katello-agent
+chkconfig goferd on && service goferd restart
+#------------------------------------------------------------------------------
+#-- Setup Discovery service
+#------------------------------------------------------------------------------
+yum -y ­install foreman-discovery-image rubygem-smart_proxy_discovery
+#-- NOTE: tftp server is needed to build images even if not used for builds
+satellite-installer --scenario satellite \
+                    --enable-foreman-plugin-discovery \
+                    --foreman-proxy-tftp true \
+                    --foreman-proxy-tftp-servername "$(hostname)"
+
+#-- ISO for original disocvery image is located:
+#     /usr/share/foreman-discovery-image/
+#   We need to make a custom one. This creates a new ISO w/date_time stamp
+#   NOTE: the exact version of the original ISO may differ, be sure to check.
+cd /usr/share/foreman-discovery-image
+discovery-remaster foreman-discovery-image-3.1.1-22.iso \
+  "proxy.url=${SAT6_URL}:9090 proxy.type=proxy fdi.pxauto=1"
+#------------------------------------------------------------------------------
+#-- Notes about RH products
+#------------------------------------------------------------------------------
+#-- Some RH Application products
+#   RH Ceph Storage Tools for RHEL [567] Server
+#   RH CloudForms Tools for RHEL [56] 
+#   RH Enterprise Vritualiztion Agents for RHEL [56]
+#   RH OpenStack Platform [789] Tools for RHEL 7 Server
+#   RH Satellite Tools 6.[12] for RHEL [567] Server
+#   RH Software Collections for RHEL [67] Server [https://access.redhat.com/solutions/472793]
+#   RH Storage Native Client for RHEL [567] Server
+#   RH Subscription manager for RHEL 6 Server
+#   RH Virt V2V Tools for RHEL [67]
+#   RH Vritualiztion 4 Agents for RHEL [56]
+#   RHN Tools for RHEL [567] Server
+#   RHEL High Availability for RHEL [67] Server
+#------------------------------------------------------------------------------
+#-- Some RHEL specific products
+#   RHEL [567] Server
+#   RHEL [67]  Server Extras [https://access.redhat.com/support/policy/updates/extras/]
+#   RHEL [567] Server RH Common
+#                     {RH Common channel is recommended for use if creating
+#                      custom RHEL guest images that require cloud-init.}
+#   RHEL [5]   Server Virtualization
+#   RHEL [567] Server Fastrackv[https://access.redhat.com/solutions/67210]
+#   RHEL [567] Server Optional Fastrackv[https://access.redhat.com/solutions/67210]
+#------------------------------------------------------------------------------
+#-- Some RHEL products with limited/no support
+#   RHEL [567] Server Optional [https://access.redhat.com/articles/1150793]
+#   RHEL [567] Server Supplementary [https://access.redhat.com/articles/1150793]
+#   RHEL [567] Server Oracle Java [https://access.redhat.com/solutions/732883]
+#------------------------------------------------------------------------------
+#-- Some common 3rd party products
+#   EPEL [567] Server [https://access.redhat.com/solutions/3358]
+#                     NOTE: EPEL req's: RHEL 6: Optional; RHEL7: Optional & Extras
+#   VMWare Tools [56] [https://packages.vmware.com]
+#   HP Hardware Agents/Drivers [567] [http://downloads.linux.hpe.com/SDR/index.html]
+#   Docker Official [67] [https://yum.dockerproject.org/repo/main/centos/]
+#------------------------------------------------------------------------------
+#-- VMWare permissions Satellite needs to do its magic
+#------------------------------------------------------------------------------
+# All Privileges → Datastore → Allocate Space
+# All Privileges → Network → Assign Network
+# All Privileges → Resource → Assign virtual machine to resource pool
+# All Privileges → Virtual Machine → Configuration (All)
+# All Privileges → Virtual Machine → Interaction
+# All Privileges → Virtual Machine → Inventory
+# All Privileges → Virtual Machine → Provisioning
+#------------------------------------------------------------------------------
+#-- Red Hat Insights on client
+#------------------------------------------------------------------------------
+#-- Install/Register
+yum install redhat-access-insights
+redhat-access-insights --register
+#-- Unregister
+redhat-access-insights  --unregister
+rm -f /etc/redhat-access-insights/.*regist*
+#------------------------------------------------------------------------------
+#-- Puppet Notes
+#------------------------------------------------------------------------------
+#-- Install/Enable Puppet on client
+yum -y install puppet
+puppet config set server "${SAT6_SERVER}" --section agent
+chkconfig puppet on && service puppet restart
+#-- To generate a new certificate request on the client
+#   These first 3 steps also effectively 'unregister' the client
+service puppet stop && chkconfig puppet off
+rm -rf /var/lib/puppet/ssl/*
+#-- Execute on SAT6_SERVER: puppet cert clean <hostname_in_satellite>
+puppet agent --test --waitforcert=0
+chkconfig puppet on && service puppet start
+#-- remove puppet
+service puppet stop && chkconfig puppet off
+rm -rf /var/lib/puppet
+yum -y erase puppet
+yum erase hiera libselinux-ruby ruby-augeas ruby-rgen ruby-shadow
+#-- (Make sure this doesn't remove something important)
+#-- These are installed as Puppet agent dependencies (23M total):
+#     facter libyaml pciutils augeas-libs hiera libselinux-ruby
+#     ruby rubygems ruby-irb ruby-libs ruby-augeas ruby-rgen ruby-shadow
+#     rubygem-bigdecimal rubygem-io-console rubygem-json rubygem-psych rubygem-rdoc
+#-- These are installed as Facter dependencies (13M total):
+#     libyaml pciutils
+#     ruby rubygems ruby-irb ruby-libs
+#     rubygem-bigdecimal rubygem-io-console rubygem-json rubygem-psych rubygem-rdoc
+#------------------------------------------------------------------------------
+#-- virt-who stuff
+#   REF: virt-who-config(5) manual page
+#   REF: https://access.redhat.com/documentation/en-us/red_hat_satellite/6.2/html/virtual_instances_guide
+#------------------------------------------------------------------------------
+#-- Global config file, here's some sane defaults
+cat >/etc/virt-who.conf <<EOF
+[global]
+interval=1200
+log_per_config=True
+log_dir=/var/log/rhsm/virtwho
+
+[defaults]
+owner=${SAT6_ORG}
+env=Library
+hypervisor_id=hostname
+rhsm_hostname=${SAT6_SERVER}
+rhsm_username=${SAT6_VIRTWHO_USER}
+rhsm_encrypted_password=${SAT6_VIRTWHO_HASH}
+rhsm_prefix=/rhsm 
+EOF
+#-- A typical VMWare source, can be more than one file
+cat >/etc/virt-who.d/vmware-vcenter.conf <<EOF
+[vmware-vcenter]
+type=esx
+server=${VCENTER_IP}
+username=${SAT6_VMWARE_USER}
+encrypted_password=${SAT6_VMWARE_HASH}
+filter_hosts=list,of,esx,hosts,to,include
+EOF
+
+systemctl enable virt-who && systemctl start virt-who
+
+
+
+
+
+
+
+
+
