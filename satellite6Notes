@@ -193,8 +193,8 @@ service rhsmcertd status
 #-- This series of steps (executed on the client) can address many minor issues,
 #   including when UI still shows yellow/not installed
 subscription-manager refresh \
-  && systemctl restart goferd \
-  && systemctl restart rhsmcertd \
+  && service goferd restart \
+  && service rhsmcertd restart \
   && rm -f /var/lib/rhsm/packages/packages.json \
   && katello-package-upload 
 #-- "Complete" unregister of a system
@@ -235,6 +235,15 @@ hammer template create --name "Template Name" \
                        --type provision \
                        --organizations "${SAT6_ORG}" \
                        --locations "${SAT6_LOC}"
+#-- Publish updates to a list of base content views (BCV)
+DATE=$(date +%Y%m%d)
+VIEWS='Space seperated list of BCV'
+for CVIEW in ${VIEWS}; do
+  echo "${CVIEW}"
+  hammer content-view publish --name "${CVIEW}" \
+                              --organization "${SAT6_ORG}" \
+                              --description  "Published on ${DATE} by ${SAT6_USER}"
+done
 #------------------------------------------------------------------------------
 #-- Backing up (Based on chapter 6 in Server Admin Guide)
 #   REF: https://access.redhat.com/documentation/en/red-hat-satellite/6.2/html/server-administration-guide
