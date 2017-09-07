@@ -139,7 +139,7 @@ hammer repository-set enable --id 4743 --product-id 10 --basearch x86_64
 #-- Need to install/update these first
 yum -y install subscription-manager subscription-manager-migration-* 
 yum -y update yum openssl
-yum -y install "${SAT6_URL}/pub/katello-ca-consumer-latest.noarch.rpm"
+rpm -ivh "${SAT6_URL}/pub/katello-ca-consumer-latest.noarch.rpm"
 #-- You will need an ID on both servers which has permissions to do the work
 #-- This next command will:
 #   - Remove system from Sat5
@@ -158,18 +158,19 @@ rhn-migrate-classic-to-rhsm --force --remove-rhn-packages \
                             --legacy-user="${SAT5_USER}" \
                             --activation-key="${SAT6_AK_DEFAULT}"
 #------------------------------------------------------------------------------
-#-- Register a client from Sat5 to Sat6
+#-- Register a client on Sat6
 #------------------------------------------------------------------------------
 #--Register a system w/activation key
-subscription-manager register --activationkey="${SAT6_AK_DEFAULT}"
+subscription-manager register --activationkey="${SAT6_AK_DEFAULT}" \
+                              --org="${SAT6_ORG}"
 #--Register a system w/o activation key
 subscription-manager register --username="${SAT6_USER}" \
                               --org="${SAT6_ORG}" \
                               --environment=Temporary
 #------------------------------------------------------------------------------
-#-- Post register/migration steps
+#-- Post registration/migration steps
 #------------------------------------------------------------------------------
-#-- Register/migration should reset enabled repos to a bare minimum
+#-- The above processes should reset enabled repos to at least a bare minimum
 #   If not, this command will:
 subscription-manager repos --enable=rhel-*-server-rpms \
                            --enable=rhel-*-server-satellite-tools-6.2-rpms
@@ -181,7 +182,7 @@ chkconfig goferd on && service goferd restart
 #         the host into the correct environment, has the correct subscriptions,
 #         and other cofigurations.
 #-- remove old RHN stuff if its still around
-yum remove rhn-setup rhn-client-tools yum-rhn-plugin rhnsd rhn-check rhnlib spacewalk-abrt spacewalk-oscap osad 'rh-*-rhui-client'
+yum remove 'rhn*' yum-rhn-plugin 'spacewalk*' osad 'rh-*-rhui-client'
 #------------------------------------------------------------------------------
 #-- Some troubleshooting steps
 #------------------------------------------------------------------------------
@@ -196,7 +197,8 @@ subscription-manager refresh \
   && service goferd restart \
   && service rhsmcertd restart \
   && rm -f /var/lib/rhsm/packages/packages.json \
-  && katello-package-upload 
+  && katello-package-upload \
+  && yum clean all
 #-- "Complete" unregister of a system
 service goferd stop && chkconfig goferd off
 service rhsmcertd stop && chkconfig rhsmcertd off
