@@ -182,7 +182,7 @@ chkconfig goferd on && service goferd restart
 #         the host into the correct environment, has the correct subscriptions,
 #         and other cofigurations.
 #-- remove old RHN stuff if its still around
-yum remove 'rhn*' yum-rhn-plugin 'spacewalk*' osad 'rh-*-rhui-client'
+yum remove '*rhn*' 'spacewalk*' osad 'rh-*-rhui-client'
 #------------------------------------------------------------------------------
 #-- Some troubleshooting steps
 #------------------------------------------------------------------------------
