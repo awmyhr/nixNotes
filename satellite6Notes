@@ -1,4 +1,9 @@
 #------------------------------------------------------------------------------
+# name:    Satellite 6 Notes (satellite6Notes)
+# author:  awmyhr@gmail.com
+# revised: 2017-10-17
+# created: 2016-12-07
+#------------------------------------------------------------------------------
 #-- NOTE: This document was compiled running Satellite 6.2.4 on RHEL 7.3
 #         It is assumed clients are RHEL6 or RHEL7. Client-side service
 #         commands will use the legacy chkconfig/service for this reason
@@ -229,7 +234,7 @@ katello-service start
 yum update --downloadonly
 katello-service stop
 yum update
-satellite-installer --scenario satellite --upgrade
+satellite-installer --scenario satellite --upgrade --verbose
 reboot
 #-- Add a new template
 hammer template create --name "Template Name" \
@@ -424,6 +429,9 @@ username=${SAT6_VMWARE_USER}
 encrypted_password=${SAT6_VMWARE_HASH}
 filter_hosts=list,of,esx,hosts,to,include
 EOF
+
+#-- dump virt-who info instead of uploading
+virt-who -p
 
 systemctl enable virt-who && systemctl start virt-who
 
