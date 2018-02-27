@@ -576,7 +576,7 @@ yum install hpacucli hp-smh-templates hpacucli hpdiags hponcfg hpsmh hpssacli hp
 # colordiff wrapper fo diff and produces the same output but with pretty syntax highlighting.
 # git-all   good enough version control
 # git-extras  additional commands fer git
-# gitflow   tools to make using git even better
+# gitflow   tools to make using git even better (see below for the better avh version)
 # gpm       console mouse, useful to wake console without pushing a key
 # inxi      general system information
 # lshw      Hardware lister
@@ -754,6 +754,35 @@ dnf -y install --allowerasing ibfonts-meta-extended ibfonts-meta-extended-lt
 #   As well as perhaps others...
 # This setting is specifically to allow Firefox to run plugins on a SELinux enabled system:
 setsebool -P unconfined_mozilla_plugin_transition 0
+################################################################################
+#-- Off the beaten track utils
+#   May need one of these if transparent cert injection is taking place
+#   'wget -q --secure-protocol=TLSv1 ' -or- 'curl -L --ciphers TLSv1 '
+#   (the curl option seems more successful)
+#   yes, insecure I know, but vetted
+DEST=/usr/local/bin
+# Install docker-compose - Work w/multiple containers
+wget -q https://github.com/docker/compose/releases/download/1.19.0/docker-compose-`uname -s`-`uname -m` -O "${DEST}/docker-compose" \
+    && chmod 0755 "${DEST}/docker-compose"
+# Install ctop - Top for containers
+wget -q https://github.com/bcicen/ctop/releases/download/v0.7/ctop-0.7-linux-amd64 -O "${DEST}/ctop" \
+    && chmod 0755 "${DEST}/ctop"
+# Install ack - A better grep
+wget -q https://beyondgrep.com/ack-2.22-single-file -O "${DEST}/ack" \
+    && chmod 0755 "${DEST}/ack"
+# Install slit - A better log viewer
+wget -q https://github.com/tigrawap/slit/releases/download/1.1.6/slit_linux_amd64 -O "${DEST}/slit" \
+    && chmod 0755 "${DEST}/slit"
+# Install exa - A better ls
+wget -q https://github.com/ogham/exa/releases/download/v0.8.0/exa-linux-x86_64-0.8.0.zip \
+    && unzip exa-linux-x86_64-0.8.0.zip \
+    && mv exa-linux-x86_64 "${DEST}/exa" \
+    && rm exa-linux-x86_64-0.8.0.zip \
+    && chmod 0755 "${DEST}/exa"
+# Install git-flow - Git Flow extension
+wget --no-check-certificate -q https://raw.github.com/petervanderdoes/gitflow-avh/develop/contrib/gitflow-installer.sh \
+    && bash gitflow-installer.sh install stable \
+    && rm -Rf gitflow-installer.sh gitflow
 ################################################################################
 # Notes about some services:
 # avahi-daemon   – no need to service discovery (printers, file servers, etc) on local network
