@@ -1,7 +1,7 @@
 #------------------------------------------------------------------------------
 # name:    Satellite 6 Notes (satellite6Notes)
 # author:  awmyhr@gmail.com
-# revised: 2017-10-17
+# revised: 20180227-155722
 # created: 2016-12-07
 #------------------------------------------------------------------------------
 #-- NOTE: This document was compiled running Satellite 6.2.4 on RHEL 7.3
@@ -208,6 +208,7 @@ subscription-manager refresh \
 service goferd stop && chkconfig goferd off
 service rhsmcertd stop && chkconfig rhsmcertd off
 subscription-manager unregister
+rm -f /var/lib/rhsm/packages/packages.json /etc/rhsm/facts/katello.facts
 #------------------------------------------------------------------------------
 #-- Some useful commands
 #------------------------------------------------------------------------------
