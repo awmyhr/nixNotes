@@ -1,7 +1,7 @@
 #------------------------------------------------------------------------------
 # name:    Satellite 6 Notes (satellite6Notes)
 # author:  awmyhr@gmail.com
-# revised: 20180227-155722
+# revised: 20180410-145639
 # created: 2016-12-07
 #------------------------------------------------------------------------------
 #-- NOTE: This document was compiled running Satellite 6.2.4 on RHEL 7.3
@@ -205,9 +205,11 @@ subscription-manager refresh \
   && katello-package-upload \
   && yum clean all
 #-- "Complete" unregister of a system
+subscription-manager unsubscribe --all
+subscription-manager unregister
+subscription-manager clean
 service goferd stop && chkconfig goferd off
 service rhsmcertd stop && chkconfig rhsmcertd off
-subscription-manager unregister
 rm -f /var/lib/rhsm/packages/packages.json /etc/rhsm/facts/katello.facts
 #------------------------------------------------------------------------------
 #-- Some useful commands
@@ -227,6 +229,16 @@ foreman-rake foreman_tasks:cleanup TASK_SEARCH='label ~ *' AFTER='30d' \
                                    VERBOSE=true NOOP=true
 #-- To see all options:
 foreman-rake -D foreman_tasks:cleanup
+#-- To export all tasks (this may take some time):
+foreman-rake foreman_tasks:export_tasks task_search=all
+#-- Export the tasks that did not complete (or are running):
+foreman-rake foreman_tasks:export_tasks
+#-- Export tasks from last several days:
+foreman-rake foreman_tasks:export_tasks task_search=all task_days=2
+#-- Export a specific type of task using the label:
+foreman-rake foreman_tasks:export_tasks TASK_SEARCH="label=Actions::Katello::CapsuleContent::Sync"
+#-- Export task with specific ID:
+foreman-rake foreman_tasks:export_tasks TASK_SEARCH="id=$UUID_OF_TASK"
 #-- Vacuum database ('du -sh /var/lib/pgsql/' before and after to verify size)
 katello-service stop && service postgresql start
 su - postgres -c 'vacuumdb -f -d foreman'
@@ -315,6 +327,26 @@ satellite-installer --scenario satellite \
 cd /usr/share/foreman-discovery-image
 discovery-remaster foreman-discovery-image-3.1.1-22.iso \
   "proxy.url=${SAT6_URL}:9090 proxy.type=proxy fdi.pxauto=1"
+#------------------------------------------------------------------------------
+#-- Create Satellite 6 "FULL" diagnostic output
+#------------------------------------------------------------------------------
+DIAG_DIR="/var/tmp/sat6-diag.$(date +%Y%m%d-%H%M)"
+mkdir "${DIAG_DIR}" ; cd "${DIAG_DIR}"
+hammer -d ping                                      2>&1 | tee 01_hammer-ping.out
+katello-service status                              2>&1 | tee 02_katello-status.out
+subscription-manager status                         2>&1 | tee 03_subman-status.out
+subscription-manager list --consumed                2>&1 | tee 04_subman-list.out
+subscription-manager identity                       2>&1 | tee 05_subman-identity.out
+subscription-manager repos --list                   2>&1 | tee 06_subman-repos.out
+yum repolist all                                    2>&1 | tee 07_yum-repolist.out
+katello-service restart                             2>&1 | tee 08_katello-restart.log
+foreman-rake katello:clean_backend_objects --trace  2>&1 | tee 09_foreman-katello-clean_backend_objects.out
+foreman-rake katello:reimport                       2>&1 | tee 10_foreman-katello-reimport.out
+hammer -dv subscription refresh-manifest            2>&1 | tee 11_refresh-manifest.out
+satellite-installer --verbose --verbose-log-level debug --scenario satellite \
+                                          --upgrade 2>&1 | tee 12_satellite-upgrade.out
+strace -o 13_strace_refresh-manifest.out \
+           hammer -dv subscription refresh-manifest 2>&1 | tee 13_refresh-manifest.out
 #------------------------------------------------------------------------------
 #-- Notes about RH products
 #------------------------------------------------------------------------------
