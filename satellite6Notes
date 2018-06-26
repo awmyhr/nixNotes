@@ -1,7 +1,7 @@
 #------------------------------------------------------------------------------
 # name:    Satellite 6 Notes (satellite6Notes)
 # author:  awmyhr@gmail.com
-# revised: 20180410-145639
+# revised: 20180626-133614
 # created: 2016-12-07
 #------------------------------------------------------------------------------
 #-- NOTE: This document was compiled running Satellite 6.2.4 on RHEL 7.3
@@ -142,7 +142,7 @@ hammer repository-set enable --id 4743 --product-id 10 --basearch x86_64
 #         actually used by a host. This is useful to avoid subscribing to
 #         channels just because the system was subscribed to them before.
 #-- Need to install/update these first
-yum -y install subscription-manager subscription-manager-migration-* 
+yum -y install subscription-manager subscription-manager-migration-*
 yum -y update yum openssl
 rpm -ivh "${SAT6_URL}/pub/katello-ca-consumer-latest.noarch.rpm"
 #-- You will need an ID on both servers which has permissions to do the work
@@ -275,7 +275,7 @@ du -hsc /etc /var/lib/pulp /var/lib/mongodb /var/lib/pgsql
 df -h "${SAT6_BACKUPS}"
 katello-backup --online-backup "/${SAT6_BACKUPS}/$(date +%Y%m%d-%H%M).full"
 #-- adding '--online-backup' will bring services back on-line before backing
-#       up pulp data, but care must be taken not to change that data during the 
+#       up pulp data, but care must be taken not to change that data during the
 #       backup
 #------------------------------------------------------------------------------
 #-- A config-only backup excludes pulp data, but can *not* be used for recovery
@@ -343,8 +343,8 @@ katello-service restart                             2>&1 | tee 08_katello-restar
 foreman-rake katello:clean_backend_objects --trace  2>&1 | tee 09_foreman-katello-clean_backend_objects.out
 foreman-rake katello:reimport                       2>&1 | tee 10_foreman-katello-reimport.out
 hammer -dv subscription refresh-manifest            2>&1 | tee 11_refresh-manifest.out
-satellite-installer --verbose --verbose-log-level debug --scenario satellite \
-                                          --upgrade 2>&1 | tee 12_satellite-upgrade.out
+# satellite-installer --verbose --verbose-log-level debug --scenario satellite \
+#                                           --upgrade 2>&1 | tee 12_satellite-upgrade.out
 strace -o 13_strace_refresh-manifest.out \
            hammer -dv subscription refresh-manifest 2>&1 | tee 13_refresh-manifest.out
 #------------------------------------------------------------------------------
@@ -352,7 +352,7 @@ strace -o 13_strace_refresh-manifest.out \
 #------------------------------------------------------------------------------
 #-- Some RH Application products
 #   RH Ceph Storage Tools for RHEL [567] Server
-#   RH CloudForms Tools for RHEL [56] 
+#   RH CloudForms Tools for RHEL [56]
 #   RH Enterprise Vritualiztion Agents for RHEL [56]
 #   RH OpenStack Platform [789] Tools for RHEL 7 Server
 #   RH Satellite Tools 6.[12] for RHEL [567] Server
@@ -451,7 +451,7 @@ hypervisor_id=hostname
 rhsm_hostname=${SAT6_SERVER}
 rhsm_username=${SAT6_VIRTWHO_USER}
 rhsm_encrypted_password=${SAT6_VIRTWHO_HASH}
-rhsm_prefix=/rhsm 
+rhsm_prefix=/rhsm
 EOF
 #-- A typical VMWare source, can be more than one file
 cat >/etc/virt-who.d/vmware-vcenter.conf <<EOF
