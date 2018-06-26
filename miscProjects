@@ -1,0 +1,300 @@
+#----------------------------------------------------------------------
+#-- terminal symbols
+#----------------------------------------------------------------------
+#--
+# TERMCAP
+
+# A = ansi
+# C = con*
+# Y = cygwin
+# D = dvtm* [*color*]
+# E = Eterm*  [*color*]
+# F = fbterm
+# G = gnome* [*color*]
+# K = konsole* [*color*]
+# L = linux*  [*-c]
+# P = putty* [*color*]
+# R = rxvt* [*color*]
+# S = screen* [*color*]
+# s = st* [*color*]
+# T = tmux* [*color*]
+# V = vt*
+# X = xterm* [*color*]
+
+# Note: tmux will show 'screen' for $TERM, but should have a variable 'TMUX' set
+#----------------------------------------------------------------------
+#--
+#----------------------------------------------------------------------
+#-- in virtual box
+# create new vm (linux/fedora 64-bit)
+# 2 - 4 GB (depending on physical memory)
+# create VDI disks, dynamically allocated
+#
+# sda -> 64G
+#
+# In settings:
+# General:
+#     Advnanced: shared clipboard bidirectional
+# System:
+#     Motherboard:
+#         disable floppy
+#     Processor:
+#         2 cpu (if youve got the threads)
+#         enable pae/nx
+#     Acceleration:
+#         kvm, enable vt-x/amd-v and nested paging
+# Display:
+#     screen:
+#         video ram 64 MB
+#         enable 3d Acceleration
+# Storage:
+#     remove IDE controller
+#     add cdrom to SATA
+#     select 'use host i/o cache'
+# Audio:
+#     disable
+# Network:
+#     adapter 1
+#         attached to: NAT network
+#             advanced: use paravirtualized network
+#
+# #-- boot fedora workstation netinstall (from https://alt.fedoraproject.org/)
+#
+# Install destination
+#     select all disks, choose "I will configure partitioning", then done
+#     add standard partition of 1024M for /boot
+#     add 10G partition for /
+#         change device type to LVM thin Provisioning (should be fedora VG)
+#         change filesystem to xfs
+#         click update settings
+#     add 5G partition for /var
+#         change device type to LVM thin Provisioning (should be fedora VG)
+#         change filesystem to xfs
+#         click update settings
+#     add 2G partition for swap
+#         change device type to LVM thin Provisioning (should be fedora VG)
+#         click update settings
+#     add 5G partition for home
+#         change device type to LVM thin Provisioning (should be fedora VG)
+#         change filesystem to xfs
+#         click update settings
+#         chose "modify" under VG, change size policy to 'as large as possible'
+#         click update settings
+#
+# You should end w/~36GiB available from a total of 64GiB
+# select done and accept changes
+#
+# Software Selection
+#     Select Base Environment of choice. Recommendations:
+#         Xfce Desktop
+#         LXDE Desktop
+#         Hawaii Desktop
+#         LXQt Desktop
+#         (One could just go with Fedora Workstation and build from there)
+#         (We will go with LXQt Desktop here)
+#     Select preferred add-ons
+#         (whatever you want here, or do it all after)
+#         (recommend to not go too crazy here)
+#         (We will go with none here)
+#
+# Begin install, create root password and user
+#
+#------------------------------------------------------------------------------
+#--
+#------------------------------------------------------------------------------
+# /etc/altlinux-release
+# /etc/angstrom-version
+# /etc/arch-release
+# /etc/debian_version
+# /etc/fedora-release
+# /etc/frugalware-release
+# /etc/gentoo-release
+# /etc/mageia-release
+# /etc/mandriva-release
+# /etc/meego-release
+# /etc/redhat-release
+# /etc/slackware-version
+# /etc/SuSE-release
+#------------------------------------------------------------------------------
+#--
+#------------------------------------------------------------------------------
+Alpine [Server] (---) ^
+Arch [Server] (---) #
+    Antergos [Desktop] (Arch) *
+    Manjaro [Desktop] (Arch) *
+Debian [Server] (---) *
+    antiX [Desktop] (Debian) #
+    deepin [Desktop] (Debian) #
+    Devuan [Server] (Debian) +
+    Endless [Desktop] (Debian) #
+    Kali [Special] (Debian) #
+    MX Linux [Desktop] (Debian/antiX) *
+    Ubuntu [Server] (Debian) *
+        elementary [Desktop] (Debian/Ubuntu) *
+        Mint [Desktop] (Debian/Ubuntu) *
+        Lite [Desktop] (Debian/Ubuntu) #
+        Peppermint [Desktop] (Debian/Lubuntu) +
+        POP!_OS [Desktop] (Debian/Ubuntu) ^
+        Zorin [Desktop] (Debian/Ubuntu) #
+Fedora [Server] (---) *
+    RHEL [Server] (Fedora) ^
+        CentOS [Server] (Fedora/RHEL) #
+        ClearOS [Server] (Fedora/RHEL) ^
+        Scientific [Server] (RHEL) ^
+FreeBSD [Server] (---) ^
+    DragonFly BSD [Server] (FreeBSD) ^
+    TrueOS [Server] (FreeBSD) #
+Gentoo [Server] (---) ^
+OpenBSD [Server] (---) ^
+OpenSUSE [Server] (---) *
+    Gecko [Desktop] (OpenSUSE) +
+PCLinuxOS [Desktop] (---/Mandriva) #
+ReactOS [Desktop] (---) # (1)
+Slackware [Server] (---) ^
+Solaris [Server] (---) (2)
+    SmartOS [Server] (Solaris) ^
+Solus [Desktop] (---) *
+
+* Top 10
+# Top 20
++ Up-and-coming
+^ Honorable Mentions
+(1) Non-POSIX
+(2) Non-Free/Non-OpenSource
+Note: Most [Server] systems also have [Desktop] modes
+
+#------------------------------------------------------------------------------
+#--
+#------------------------------------------------------------------------------
+Distro    Docker (1)           VM/ISO
+Alpine    alpine
+Arch      base/archlinux
+Debian    debian
+Ubuntu    ubuntu
+Fedora    fedora
+Gentoo    gentoo/stage3-amd64
+OpenSUSE  opensuse
+Slackware vbatts/slackware
+
+(1) Refers only to Linux-based containers available from Docker Hub
+#----------------------------------------------------------------------
+#--
+#----------------------------------------------------------------------
+# "Official" Docker base OS containers (Versions as of 20170531):
+#     alpine:latest       3.6 (alpine:edge available)
+#     amazonlinux:latest  2017.03
+#     busybox:glibc       1.26.2 glibc (from Debian)
+#     busybox:musl        1.26.2 musl (from Alpine)
+#     busybox:uclibc      1.26.2 uClibc (from Buildroot)
+#     centos:6            6.9
+#     centos:latest       7.3
+#     cirros:latest       0.3.4
+#     clearlinux:latest
+#     debian:jessie       8.8 (also debian:latest)
+#     debian:stretch      9.0
+#     debian:wheezy       7.11
+#     fedora:latest       25 (fedora:24, fedora:rawhide available)
+#     mageia:latest       5.1
+#     opensuse:harlequin  13.2
+#     opensuse:leap       42.2 (also opensuse:latest)
+#     opensuse:tubleweed  dev version
+#     oraclelinux:5       5.11
+#     oraclelinux:6       6.9
+#     oraclelinux:latest  7.3
+#     photon:latest       1.0
+#     sourcemage:latest   0.62
+#     ubuntu:devel        17.10   (artful)
+#     ubuntu:rolling      17.04   (zesty)
+#     ubuntu:trusty       14.04.5 (trusty)
+#     ubuntu:xenial       16.04   (xenial) (also ubuntu:latest)
+#     ubuntu:yakkety      16.10   (yekkety)
+
+# "Unofficial" Docker base OS Containers:
+#     base/archlinux
+#     cern/slc5-base
+#     cern/slc6-base
+#     cern/slc7-base
+#     elementary/docker
+#     kalilinux/kali-linux-docker
+#     mohemohe/antergos
+#     nmaas87/docker-openwrt
+#     vcatechnology/linux-mint
+
+# "Official" Docker language containers:
+#     bash:3              3.2.57 (bash:3.[01] available)
+#     bash:4              4.4.12 (also bash:latest) (bash:4.[0123] available)
+#     erlang:latest       19.3.3
+#     gazebo:latest       libgazebo8
+#     gcc:latest          7.1.0
+#     golang:latest       1.8.3 (golang:alpine available)
+#     haskell:latest      8.0.2
+#     node:latest         8.0.0 (node:alpine available)
+#     openjdk:9           9-b170
+#     openjdk:jdk         8u131 (also openjdk:latest) (openjdk:jre available)
+#     perl:latest         5.24.1 (perl:5.22 available)
+#     perl:threaded       5.24.1 (perl:5.22-threaded available)
+#     php:latest          7.1.5 (php:7-apache, php:7-fpm available, php:alpine, php:7-fpm-alpine available)
+#     pypy:latest         3-5.7.1 (alt python implementation)
+#     python:2            2.7.13 (python:2-alpine available)
+#     python:3            3.6.1 (also python:latest) (python:alpine available)
+#     ros:latest          kinetic
+#     ruby:latest         2.4.1 (ruby:alpine available)
+#     swift:latest        3.1.0
+
+# "Unofficial" Docker language containers:
+#     pypi/coconut:latest 0.3.2 (actually quite old)
+#----------------------------------------------------------------------
+#--
+#----------------------------------------------------------------------
+#-- Test username prefixes
+# c-    "Clean" Empty home directory
+# d-    "Default" Home directory (as created by useradd)
+# t-    "Test" Home directory with dotfiles-public files
+# o-    "Old" Home directory with old dotfiles (need to dig these up)
+#-- Test shell (depends on availability) username suffixes
+# ash
+# bash
+# csh
+# dash
+# fish
+# ksh
+# mksh
+# rc
+# sh
+# tcsh
+# tmux
+# yash
+# zsh
+#------------------------------------------------------------------------------
+#--
+#------------------------------------------------------------------------------
+/usr/include/sys/syslog.h
+
+FACILITIES AND LEVELS (see /usr/include/sys/syslog.h)
+LF_KERN      0 kern     kernel messages
+LF_USER      1 user     random user-level messages (default)
+LF_MAIL      2 mail     mail system
+LF_DAEMON    3 daemon   system daemons
+LF_AUTH      4 auth     security/authorization messages
+LF_SYSLOG    5 syslog   messages generated internally by syslogd
+LF_LPR       6 lpr      line printer subsystem
+LF_NEWS      7 news     network news subsystem
+LF_UUCP      8 uucp     UUCP subsystem
+LF_CRON      9 cron     clock daemon
+LF_AUTHPRIV 10 authpriv security/authorization messages (private)
+LF_FTP      11 ftp      ftp daemon
+LF_LOCAL[0-7] [16-23] local[0-7] Reserved for local use.
+
+LL_EMERG    0 emerg     System is unusable. A panic condition.
+LL_ALERT    1 alert     Action must be taken immediately, such as a corrupted system database.
+LL_CRIT     2 crit      Critical conditions, such as hard device errors.
+LL_ERR      3 err       Error conditions
+LL_WARNING  4 warning   Warning conditions
+LL_NOTICE   5 notice    Normal but significant condition. Conditions that are not error conditions, but that may require special handling.
+LL_INFO     6 info      Informational
+LL_DEBUG    7 debug     Debug-level messages
+#----------------------------------------------------------------------
+#--
+#----------------------------------------------------------------------
+
+
