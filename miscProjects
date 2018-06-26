@@ -1,6 +1,6 @@
-#----------------------------------------------------------------------
+#------------------------------------------------------------------------------
 #-- terminal symbols
-#----------------------------------------------------------------------
+#------------------------------------------------------------------------------
 #--
 # TERMCAP
 
@@ -22,9 +22,9 @@
 # X = xterm* [*color*]
 
 # Note: tmux will show 'screen' for $TERM, but should have a variable 'TMUX' set
-#----------------------------------------------------------------------
+#------------------------------------------------------------------------------
 #--
-#----------------------------------------------------------------------
+#------------------------------------------------------------------------------
 #-- in virtual box
 # create new vm (linux/fedora 64-bit)
 # 2 - 4 GB (depending on physical memory)
@@ -102,21 +102,22 @@
 #------------------------------------------------------------------------------
 #--
 #------------------------------------------------------------------------------
-# /etc/altlinux-release
-# /etc/angstrom-version
-# /etc/arch-release
-# /etc/debian_version
-# /etc/fedora-release
-# /etc/frugalware-release
-# /etc/gentoo-release
-# /etc/mageia-release
-# /etc/mandriva-release
-# /etc/meego-release
-# /etc/redhat-release
-# /etc/slackware-version
-# /etc/SuSE-release
+/etc/altlinux-release
+/etc/angstrom-version
+/etc/arch-release
+/etc/debian_version
+/etc/fedora-release
+/etc/frugalware-release
+/etc/gentoo-release
+/etc/mageia-release
+/etc/mandriva-release
+/etc/meego-release
+/etc/redhat-release
+/etc/slackware-version
+/etc/SuSE-release
 #------------------------------------------------------------------------------
-#--
+#-- Quick "analysis" of DistroWatch top distros
+#   Likely worth the time to at least poke at these...
 #------------------------------------------------------------------------------
 Alpine [Server] (---) ^
 Arch [Server] (---) #
@@ -164,9 +165,10 @@ Solus [Desktop] (---) *
 Note: Most [Server] systems also have [Desktop] modes
 
 #------------------------------------------------------------------------------
-#--
+#-- Above list distilled into list of Linux server distros w/relatively
+#   easy access (via containers from Docker Hub)
 #------------------------------------------------------------------------------
-Distro    Docker (1)           VM/ISO
+Distro    Docker
 Alpine    alpine
 Arch      base/archlinux
 Debian    debian
@@ -176,76 +178,81 @@ Gentoo    gentoo/stage3-amd64
 OpenSUSE  opensuse
 Slackware vbatts/slackware
 
-(1) Refers only to Linux-based containers available from Docker Hub
-#----------------------------------------------------------------------
+#------------------------------------------------------------------------------
+#-- "Official" Docker base OS containers (Versions as of 20170531)
+#------------------------------------------------------------------------------
+alpine:latest       3.6 (alpine:edge available)
+amazonlinux:latest  2017.03
+busybox:glibc       1.26.2 glibc (from Debian)
+busybox:musl        1.26.2 musl (from Alpine)
+busybox:uclibc      1.26.2 uClibc (from Buildroot)
+centos:6            6.9
+centos:latest       7.3
+cirros:latest       0.3.4
+clearlinux:latest
+debian:jessie       8.8 (also debian:latest)
+debian:stretch      9.0
+debian:wheezy       7.11
+fedora:latest       25 (fedora:24, fedora:rawhide available)
+mageia:latest       5.1
+opensuse:harlequin  13.2
+opensuse:leap       42.2 (also opensuse:latest)
+opensuse:tubleweed  dev version
+oraclelinux:5       5.11
+oraclelinux:6       6.9
+oraclelinux:latest  7.3
+photon:latest       1.0
+sourcemage:latest   0.62
+ubuntu:devel        17.10   (artful)
+ubuntu:rolling      17.04   (zesty)
+ubuntu:trusty       14.04.5 (trusty)
+ubuntu:xenial       16.04   (xenial) (also ubuntu:latest)
+ubuntu:yakkety      16.10   (yekkety)
+
+#------------------------------------------------------------------------------
+#-- "Unofficial" Docker base OS Containers
+#------------------------------------------------------------------------------
+base/archlinux
+cern/slc5-base
+cern/slc6-base
+cern/slc7-base
+elementary/docker
+kalilinux/kali-linux-docker
+mohemohe/antergos
+nmaas87/docker-openwrt
+vcatechnology/linux-mint
+
+#------------------------------------------------------------------------------
+#-- "Official" Docker language containers
+#------------------------------------------------------------------------------
+bash:3              3.2.57 (bash:3.[01] available)
+bash:4              4.4.12 (also bash:latest) (bash:4.[0123] available)
+erlang:latest       19.3.3
+gazebo:latest       libgazebo8
+gcc:latest          7.1.0
+golang:latest       1.8.3 (golang:alpine available)
+haskell:latest      8.0.2
+node:latest         8.0.0 (node:alpine available)
+openjdk:9           9-b170
+openjdk:jdk         8u131 (also openjdk:latest) (openjdk:jre available)
+perl:latest         5.24.1 (perl:5.22 available)
+perl:threaded       5.24.1 (perl:5.22-threaded available)
+php:latest          7.1.5 (php:7-apache, php:7-fpm available, php:alpine, php:7-fpm-alpine available)
+pypy:latest         3-5.7.1 (alt python implementation)
+python:2            2.7.13 (python:2-alpine available)
+python:3            3.6.1 (also python:latest) (python:alpine available)
+ros:latest          kinetic
+ruby:latest         2.4.1 (ruby:alpine available)
+swift:latest        3.1.0
+
+#------------------------------------------------------------------------------
+#-- "Unofficial" Docker language containers
+#------------------------------------------------------------------------------
+pypi/coconut:latest 0.3.2 (actually quite old)
+
+#------------------------------------------------------------------------------
 #--
-#----------------------------------------------------------------------
-# "Official" Docker base OS containers (Versions as of 20170531):
-#     alpine:latest       3.6 (alpine:edge available)
-#     amazonlinux:latest  2017.03
-#     busybox:glibc       1.26.2 glibc (from Debian)
-#     busybox:musl        1.26.2 musl (from Alpine)
-#     busybox:uclibc      1.26.2 uClibc (from Buildroot)
-#     centos:6            6.9
-#     centos:latest       7.3
-#     cirros:latest       0.3.4
-#     clearlinux:latest
-#     debian:jessie       8.8 (also debian:latest)
-#     debian:stretch      9.0
-#     debian:wheezy       7.11
-#     fedora:latest       25 (fedora:24, fedora:rawhide available)
-#     mageia:latest       5.1
-#     opensuse:harlequin  13.2
-#     opensuse:leap       42.2 (also opensuse:latest)
-#     opensuse:tubleweed  dev version
-#     oraclelinux:5       5.11
-#     oraclelinux:6       6.9
-#     oraclelinux:latest  7.3
-#     photon:latest       1.0
-#     sourcemage:latest   0.62
-#     ubuntu:devel        17.10   (artful)
-#     ubuntu:rolling      17.04   (zesty)
-#     ubuntu:trusty       14.04.5 (trusty)
-#     ubuntu:xenial       16.04   (xenial) (also ubuntu:latest)
-#     ubuntu:yakkety      16.10   (yekkety)
-
-# "Unofficial" Docker base OS Containers:
-#     base/archlinux
-#     cern/slc5-base
-#     cern/slc6-base
-#     cern/slc7-base
-#     elementary/docker
-#     kalilinux/kali-linux-docker
-#     mohemohe/antergos
-#     nmaas87/docker-openwrt
-#     vcatechnology/linux-mint
-
-# "Official" Docker language containers:
-#     bash:3              3.2.57 (bash:3.[01] available)
-#     bash:4              4.4.12 (also bash:latest) (bash:4.[0123] available)
-#     erlang:latest       19.3.3
-#     gazebo:latest       libgazebo8
-#     gcc:latest          7.1.0
-#     golang:latest       1.8.3 (golang:alpine available)
-#     haskell:latest      8.0.2
-#     node:latest         8.0.0 (node:alpine available)
-#     openjdk:9           9-b170
-#     openjdk:jdk         8u131 (also openjdk:latest) (openjdk:jre available)
-#     perl:latest         5.24.1 (perl:5.22 available)
-#     perl:threaded       5.24.1 (perl:5.22-threaded available)
-#     php:latest          7.1.5 (php:7-apache, php:7-fpm available, php:alpine, php:7-fpm-alpine available)
-#     pypy:latest         3-5.7.1 (alt python implementation)
-#     python:2            2.7.13 (python:2-alpine available)
-#     python:3            3.6.1 (also python:latest) (python:alpine available)
-#     ros:latest          kinetic
-#     ruby:latest         2.4.1 (ruby:alpine available)
-#     swift:latest        3.1.0
-
-# "Unofficial" Docker language containers:
-#     pypi/coconut:latest 0.3.2 (actually quite old)
-#----------------------------------------------------------------------
-#--
-#----------------------------------------------------------------------
+#------------------------------------------------------------------------------
 #-- Test username prefixes
 # c-    "Clean" Empty home directory
 # d-    "Default" Home directory (as created by useradd)
@@ -293,8 +300,8 @@ LL_WARNING  4 warning   Warning conditions
 LL_NOTICE   5 notice    Normal but significant condition. Conditions that are not error conditions, but that may require special handling.
 LL_INFO     6 info      Informational
 LL_DEBUG    7 debug     Debug-level messages
-#----------------------------------------------------------------------
+#------------------------------------------------------------------------------
 #--
-#----------------------------------------------------------------------
+#------------------------------------------------------------------------------
 
 
