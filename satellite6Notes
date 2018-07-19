@@ -271,7 +271,7 @@ done
 #------------------------------------------------------------------------------
 #-- Full backup needs enough space to hold /etc /var/lib/[pulp|mongodb|pgsql]
 #   Generic command: katello-backup "${BACKUP_DIR}"
-du -hsc /etc /var/lib/pulp /var/lib/mongodb /var/lib/pgsql
+du -hsc /etc /var/lib/pulp /var/lib/mongodb /var/lib/pgsql /root/ssl-build /var/www/html/pub /opt/puppetlabs
 df -h "${SAT6_BACKUPS}"
 katello-backup --online-backup "/${SAT6_BACKUPS}/$(date +%Y%m%d-%H%M).full"
 #-- adding '--online-backup' will bring services back on-line before backing
@@ -280,7 +280,7 @@ katello-backup --online-backup "/${SAT6_BACKUPS}/$(date +%Y%m%d-%H%M).full"
 #------------------------------------------------------------------------------
 #-- A config-only backup excludes pulp data, but can *not* be used for recovery
 #   Generic command: katello-backup --skip-pulp-content "${BACKUP_DIR}"
-du -hsc /etc /var/lib/mongodb /var/lib/pgsql
+du -hsc /etc /var/lib/mongodb /var/lib/pgsql /root/ssl-build /var/www/html/pub /opt/puppetlabs
 df -h "${SAT6_BACKUPS}"
 katello-backup --skip-pulp-content "/${SAT6_BACKUPS}/$(date +%Y%m%d-%H%M).config"
 #------------------------------------------------------------------------------

@@ -175,7 +175,7 @@ Debian    debian
 Ubuntu    ubuntu
 Fedora    fedora
 Gentoo    gentoo/stage3-amd64
-OpenSUSE  opensuse
+OpenSUSE  opensuse (deprecated, use: opensuse/leap opensuse/tubleweed)
 Slackware vbatts/slackware
 
 #------------------------------------------------------------------------------
