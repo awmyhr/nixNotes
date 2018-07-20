@@ -303,5 +303,35 @@ LL_DEBUG    7 debug     Debug-level messages
 #------------------------------------------------------------------------------
 #--
 #------------------------------------------------------------------------------
+ar-discovery
+ar-os_apps
+ar-os_config_abrt
+ar-os_config_misc
+ar-os_config_network
+ar-os_config_puppet
+ar-os_config_smtp
+ar-os_config_time
+ar-os_security_aide
+ar-os_security_auditd
+ar-os_security_idm
+ar-os_security_misc
+ar-os_security_pam
+ar-os_security_selinux
+ar-os_security_ssh
+ar-os_update
+ar-user_apps
+ar-user_config_common
+ar-user_config_misc
+ar-user_config_shell
+ar-user_config_vi
+docker-shelltest
+cic-ansible
+cic-git
+cic-nginx
+cic-sphinx
+
+#------------------------------------------------------------------------------
+#--
+#------------------------------------------------------------------------------
 
 
