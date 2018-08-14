@@ -62,6 +62,33 @@ subscription-manager repos --enable=rhel-7-server-rpms \
                            --enable=rhel-7-server-satellite-6.2-rpms
 yum clean all && yum repolist enabled
 #------------------------------------------------------------------------------
+#-- Filesystems needed for Satellite server/capsule
+#------------------------------------------------------------------------------
+for DIR in /var/cache/pulp /var/lib/mongodb /var/lib/pgsql /var/lib/pulp /var/lib/qpidd /var/log/candlepin /var/spool/squid ; do
+  mkdir $DIR
+  chown root:root $DIR
+  chmod 0755 $DIR
+done
+
+#-- Satellite Server
+vg01 var.cache.pulp    /var/cache/pulp     20G 0755 apache:apache
+vg01 var.lib.mongodb   /var/lib/mongodb   100G 0755 mongodb:mongodb
+vg01 var.lib.pgsql     /var/lib/pgsql      50G 0700 postgres:postgres
+vg01 var.lib.pulp      /var/lib/pulp      500G 0755 apache:apache
+vg01 var.lib.qpidd     /var/lib/qpidd      20G 0755 root:root
+vg01 var.log.candlepin /var/log/candlepin   2G 0775 tomcat:tomcat
+vg01 var.spool.squid   /var/spool/squid     5G 0750 squid:squid
+
+vg02 backup            /backup            750G 0755 root:root
+#-- Satellite Capsule
+vg01 var.cache.pulp    /var/cache/pulp     20G 0755 apache:apache
+vg01 var.lib.mongodb   /var/lib/mongodb   100G 0755 mongodb:mongodb
+vg01 var.lib.pulp      /var/lib/pulp      500G 0755 apache:apache
+
+vg02 backup            /backup            100G 0755 root:root
+#-- space needed for backup
+du -hsc /etc /root/ssl-build /var/www/html/pub /var/lib/pgsql /var/lib/mongodb /var/lib/pulp
+#------------------------------------------------------------------------------
 #-- Install Satellite
 #-- Install virt-who (to interact directly with hypervisors)
 #   REF: https://access.redhat.com/documentation/en/red-hat-satellite/6.2/html/virtual-instances-guide
@@ -289,27 +316,22 @@ katello-backup --skip-pulp-content "/${SAT6_BACKUPS}/$(date +%Y%m%d-%H%M).config
 katello-backup "/${SAT6_BACKUPS}/$(date +%Y%m%d-%H%M).inc" --incremental "/${SAT6_BACKUPS}/${FULL_BACKUP_DIR}"
 #------------------------------------------------------------------------------
 #-- Register the Satellite to itself
-#   NOTE: Full discussion can be found in Chapter 3 of Installation Guide
-#   REF: https://access.redhat.com/documentation/en-us/red_hat_satellite/6.2/html/installation_guide
+#   NOTE: This is no longer supported, I've removed the notes.
+#         Instead, here's how to reverse it.
 #------------------------------------------------------------------------------
+#-- de-register in preperation for return to RH CDN
+systemctl stop goferd && systemctl stop goferd
+#-- Make *sure* **only** satellite-tools and katello-ca are removed
+#         **NOT** subscription-manager!!
+yum remove $(rpm -qa | grep katello-ca) \
+           $(yumdb search from_repo rhel-7-server-satellite-tools-6.2-rpms \
+                | grep "^[0-9a-z]" | tr '\n' ' ' )
+yum clean all && rm -rf /var/cache/yum/*
+subscription-manager clean
 subscription-manager remove --all
 subscription-manager unregister
-
-rpm -Uvh /var/www/html/pub/katello-ca-consumer-latest.noarch.rpm
-subscription-manager register --environment=Library
-
-#-- Find the Pool ID for the RH Satellite
-subscription-manager list --available
-subscription-manager attach --pool "${POOL_ID}"
-subscription-manager repos --enable=rhel-7-server-rpms \
-                           --enable=rhel-server-rhscl-7-rpms \
-                           --enable=rhel-7-server-satellite-6.2-rpms \
-                           --enable=rhel-7-server-satellite-tools-6.2-rpms
-
-#-- This should automagically enable & start goferd
-chkconfig rhsmcertd on && service rhsmcertd restart
-yum -y install katello-agent
-chkconfig goferd on && service goferd restart
+cp /etc/rhsm/rhsm.conf.kat-backup /etc/rhsm/rhsm.conf
+grep subscription.rhsm.redhat.com /etc/rhsm/rhsm.conf
 #------------------------------------------------------------------------------
 #-- Setup Discovery service
 #------------------------------------------------------------------------------
@@ -395,6 +417,14 @@ strace -o 13_strace_refresh-manifest.out \
 # All Privileges → Virtual Machine → Interaction
 # All Privileges → Virtual Machine → Inventory
 # All Privileges → Virtual Machine → Provisioning
+#------------------------------------------------------------------------------
+#-- Satellite server needs clear communication to these addresses
+#------------------------------------------------------------------------------
+# subscription.rhsm.redhat.com
+# cdn.redhat.com
+# *.akamaiedge.net
+# cert-api.access.redhat.com (if using Red Hat Insights)
+# api.access.redhat.com (if using Red Hat Insights)
 #------------------------------------------------------------------------------
 #-- Red Hat Insights on client
 #------------------------------------------------------------------------------
