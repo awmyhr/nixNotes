@@ -33,7 +33,9 @@ yum-config-manager -q --enable rhel-7-server-ansible-2-rpms >/dev/null
 yum install -y ansible
 yum-config-manager -q --enable rhel-7-server-extras-rpms >/dev/null
 yum install -y atomic cockpit-docker docker python-crypto
-
+#-- For CentOS
+yum install -y epel-release
+yum install -y ansible git docker python-cryptography python-crypto pyOpenSSL
 #------------------------------------------------------------------------------
 #-- Docker storage config
 rm -f /etc/docker/daemon.json && echo '{"storage-driver": "overlay2"}' > /etc/docker/daemon.json

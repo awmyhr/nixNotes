@@ -1,11 +1,13 @@
-#!/bin/bash NOT A REAL SHELL SCRIPT!
-# This is a cut'n'paste scriptlet
-# be sure to read & understand what you're cutting & pasting!
-#
-# ISO date stamp
-`date +%Y%m%d-%H%M`
-################################################################################
-# Some support packages:
+#!/bin/bash
+#-- NOT A REAL SHELL SCRIPT!   This is a cut'n'paste scriptlet!
+#   Be sure to read & understand what you're cutting & pasting!
+#------------------------------------------------------------------------------
+# name:    Docker Notes (miscNotes)
+# author:  awmyhr@gmail.com
+# revised: 20180815-171301
+# created: 201?-??-??
+#------------------------------------------------------------------------------
+#-- Some support packages:
 #   atomic-reactor          - Improved builder for Docker images
 #   docker-anaconda-addon   - Anaconda kickstart support for Docker
 #   docker-compose          - Multi-container orchestration for Docker
@@ -18,8 +20,8 @@
 #   sen                     - Terminal User Interface for docker engine
 #   skopeo                  - Inspect Docker images and repositories on registries
 #   source-to-image         - toolkit and workflow for building reproducible Docker images from source code
-################################################################################
-### Docker Commands:
+#------------------------------------------------------------------------------
+#-- Docker Commands:
 #    attach    Attach to a running container
 #    build     Build a container from a Dockerfile
 #    commit    Create a new image from a container's changes
@@ -97,8 +99,8 @@ docker run -v <hostDir>:<contDir> <imageID> <command>
 
 ################################################################################
 ### notes on attaching volumes (-v|--volume[=[[HOST-DIR:]CONTAINER-DIR[:OPTIONS]]])
-# If you specify, -v /HOST-DIR:/CONTAINER-DIR, Docker bind mounts /HOST-DIR 
-#   in the host to /CONTAINER-DIR in the Docker container. If 'HOST-DIR' 
+# If you specify, -v /HOST-DIR:/CONTAINER-DIR, Docker bind mounts /HOST-DIR
+#   in the host to /CONTAINER-DIR in the Docker container. If 'HOST-DIR'
 #   is omitted, Docker automatically creates the new volume on the host,
 #   however CONTAINER-DIR must exist. Common options are :rw :ro
 # There may be issues with selinux interaction between host/container. Use this
@@ -115,6 +117,19 @@ docker commit <containerid> <newreponame>
 docker tag <imageid> <tag>
 docker port
 docker inspect
+
+docker system prune --all --volumes --force
+
+docker container rm $(docker container ls -a -q)
+docker image     rm $(docker image ls -a -q)
+docker volume    rm $(docker volume ls -q)
+docker network   rm $(docker network ls -q)
+
+docker network inspect -f "{{range .IPAM.Config }}{{ .Subnet }}{{end}}" bridge
+
+alias docker-clean-unused='docker system prune --all --force --volumes'
+alias docker-clean-all='docker stop $(docker container ls -a -q) && docker system prune -a -f --volumes'
+
 
 ################################################################################
 ### atomic/rpm-ostree Commands:
@@ -139,7 +154,7 @@ docker inspect
     # version             display image 'Name Version Release' label
     # verify              verify image is fully updated
 ################################################################################
-### atomic stuff   
+### atomic stuff
 # preform an upgrade
 atomic host upgrade
 # apply update
