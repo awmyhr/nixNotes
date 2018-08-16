@@ -159,4 +159,17 @@ alias docker-clean-all='docker stop $(docker container ls -a -q) && docker syste
 atomic host upgrade
 # apply update
 systemctl reboot
+#------------------------------------------------------------------------------
+#--
+#------------------------------------------------------------------------------
+running_in_docker() {
+  awk -F/ '$2 == "docker"' /proc/self/cgroup | read
+}
+
+
+if $(awk -F/ '$2 == "docker"' /proc/self/cgroup | read) ; then
+  echo yes
+else
+  echo no
+fi
 

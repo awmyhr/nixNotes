@@ -1,3 +1,6 @@
+#!/bin/bash
+#-- NOT A REAL SHELL SCRIPT!   This is a cut'n'paste scriptlet!
+#   Be sure to read & understand what you're cutting & pasting!
 #------------------------------------------------------------------------------
 # name:    Misc. Notes (miscNotes)
 # author:  awmyhr@gmail.com
@@ -111,11 +114,20 @@ $XDG_RUNTIME_DIR
 # directories. It could, for example, define that only the file under the most
 # important base directory should be used or, as another example, it could
 # define rules for merging the information from the different files.
-if [ -d $XDG_RUNTIME_DIR ] ; then
+if [ -d "${XDG_RUNTIME_DIR}" ] ; then
     echo great
 else
     echo we should fix this
 fi
+#------------------------------------------------------------------------------
+#-- ref: https://paste.xinu.at/x9bW2f/
+#------------------------------------------------------------------------------
+export SSH_AUTH_SOCK="$XDG_RUNTIME_DIR/ssh-agent.socket"
+export IBUS_SOCK="$XDG_RUNTIME_DIR/ibus.socket"
+export GOPATH=$HOME/.go
+export GOBIN=$HOME/.go/bin
+# protect special characters
+export LC_CTYPE="en_US.UTF-8"
 #------------------------------------------------------------------------------
 #-- terminal symbols
 #------------------------------------------------------------------------------
@@ -367,6 +379,181 @@ swift:latest        3.1.0
 #-- "Unofficial" Docker language containers
 #------------------------------------------------------------------------------
 pypi/coconut:latest 0.3.2 (actually quite old)
+
+#------------------------------------------------------------------------------
+#--
+#------------------------------------------------------------------------------
+dsh -d <dist> -s <shell>
+
+docker shell
+
+
+sed -i -e "s/Required DatabaseOptional/Optional TrustAll/" /etc/pacman.conf
+
+
+pacman-key --init
+
+ln -sfn /dev/null /var/log/lastlog
+cd /var/log
+for FILE in lastlog utmp wtmp faillog ; do ln -sfn /dev/null "/var/log/${file}" ; done
+#------------------------------------------------------------------------------
+#--
+#------------------------------------------------------------------------------
+#--
+
+rhel-7-server-rpms
+rhel-7-server-ansible-2-rpms
+rhel-7-server-extras-rpms
+rhel-7-server-optional-rpms
+Metlife_epel_EPEL_7_Server
+
+
+rhel-7-server-optional-rpms
+golang
+
+Metlife_epel_EPEL_7_Server
+cargo rust rust-analysis rust-debugger-common
+
+pip install alabaster \
+            Sphinx \
+            sphinx-better-theme \
+            sphinx-py3doc-enhanced-theme \
+            sphinx-rtd-theme \
+            sphinxcontrib-fulltoc \
+            sphinxcontrib-issuetracker \
+            sphinxcontrib-plantuml \
+            sphinxcontrib-programoutput \
+            pygments-markdown-lexer \
+            recommonmark \
+
+python-sphinx
+python-sphinx-doc
+python-sphinx_rtd_theme
+python-sphinxcontrib-issuetracker
+python-sphinxcontrib-napoleon
+python-sphinxcontrib-spelling
+
+python2-sphinx
+python2-sphinx-bootstrap-theme
+python2-sphinx-theme-alabaster
+python2-sphinxcontrib-httpdomain
+python2-sphinxcontrib-programoutput
+python2-pygments-markdown-lexer
+python-markdown
+
+    && yum-config-manager -q --enable rhel-7-server-optional-rpms >/dev/null \
+    && yum-config-manager -q --enable Metlife_epel_EPEL_7_Server >/dev/null \
+    && yum -y install java-1.8.0-openjdk \
+                      texlive-collection-latexrecommended \
+                      texlive-environ \
+                      texlive-epstopdf \
+                      texlive-fncychap \
+                      texlive-framed \
+                      texlive-titlesec \
+                      texlive-threeparttable \
+                      texlive-upquote \
+                      texlive-wrapfig \
+                      texlive-multirow\
+
+capt-of.sty  eqparbox.sty  tabulary.sty
+#------------------------------------------------------------------------------
+#--
+#------------------------------------------------------------------------------
+#--
+ADD_UNAME=$(id -un)
+ADD_GNAME=$(id -gn)
+ADD_UID=$(id -u)
+ADD_GID=$(id -g)
+ADD_HOME=${HOME}
+ADD_SHELL=/bin/zsh
+
+FLAVOR='centos'
+PREFIX='sash-'
+
+docker run --tty --rm --interactive \
+    --env ADD_UNAME="$(id -un)" \
+    --env ADD_UID="$(id -u)" \
+    --env ADD_GID="$(id -g)" \
+    --env ADD_SHELL=/bin/zsh \
+    --volume "${HOME}:/home/$(id -un):rw" \
+    --hostname sash-"$(id -un)" \
+    --name "${PREFIX}$(id -un)" \
+    "${PREFIX}${FLAVOR}"
+
+docker run --tty --detach \
+    --env ADD_UNAME="$(id -un)" \
+    --env ADD_UID="$(id -u)" \
+    --env ADD_GID="$(id -g)" \
+    --env ADD_SHELL="${SHELL}" \
+    --volume "${HOME}:/home/$(id -un):rw" \
+    --hostname "${PREFIX}$(id -un)" \
+    --name "${PREFIX}$(id -un)" \
+    "${PREFIX}${FLAVOR}"
+
+docker exec --tty --interactive "${PREFIX}$(id -un)" su - "$(id -un)"
+
+docker ps -q --filter "name=${PREFIX}$(id -un)"
+
+
+
+
+bash
+csh
+dash
+fish
+ksh
+mksh
+pwsh
+rc
+rksh
+saphire
+sh
+tcsh
+tmux
+xonsh
+xs
+xyzsh
+yash
+zsh
+
+https://github.com/elves/elvish
+https://github.com/oilshell/oil
+
+/bin/bash
+/bin/csh
+/bin/dash
+/bin/fish
+/bin/ksh
+/bin/mksh
+/bin/rc
+/bin/sh
+/bin/tcsh
+/bin/tmux
+/bin/yash
+/bin/zsh
+#------------------------------------------------------------------------------
+#--
+#------------------------------------------------------------------------------
+
+docker run --rm -it \
+    -v "$(pwd)":/tmp/$(basename "${PWD}") \
+    -v /var/run/docker.sock:/var/run/docker.sock \
+    -w /tmp/$(basename "${PWD}") \
+    retr0h/molecule:latest \
+    molecule init role  --role-name ansible-consul
+# equive to:  molecule init role  --role-name NAME --driver-name docker --verifier-name testinfra
+
+docker run --rm -it \
+    -v "$(pwd)":/tmp/$(basename "${PWD}"):ro \
+    -v /var/run/docker.sock:/var/run/docker.sock \
+    -w /tmp/$(basename "${PWD}") \
+    retr0h/molecule:latest \
+    sudo molecule test
+
+https://hub.docker.com/r/plantuml/plantuml-server/
+docker run -d -p 8080:8080 plantuml/plantuml-server:jetty
+
+however UMLgraph (https://www.spinellis.gr/umlgraph/) is avail in EPEL
 
 #------------------------------------------------------------------------------
 #--
