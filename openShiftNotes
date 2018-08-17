@@ -4,7 +4,7 @@
 #------------------------------------------------------------------------------
 # name:    OKD (OpenShift Origin) Notes (miscNotes)
 # author:  awmyhr@gmail.com
-# revised: 20180817-160122
+# revised: 20180817-170800
 # created: 2018-08-10
 #------------------------------------------------------------------------------
 #-- "Quick" All-in-one binary download install
@@ -75,7 +75,7 @@ yum install -y ansible git docker python-cryptography python-crypto pyOpenSSL
 #   This *may* be needed in some environments:
 rm -f /etc/docker/daemon.json && cat >/etc/docker/daemon.json <<EOF
 {
-    "insecure-registries": ["quay.io"]
+    "insecure-registries": ["quay.io", "docker.io", "registry.access.redhat.com"]
 }
 EOF
 #-- Docker should set these on start
