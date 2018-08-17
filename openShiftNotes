@@ -4,9 +4,30 @@
 #------------------------------------------------------------------------------
 # name:    OKD (OpenShift Origin) Notes (miscNotes)
 # author:  awmyhr@gmail.com
-# revised: 20180815-171301
+# revised: 20180817-160122
 # created: 2018-08-10
 #------------------------------------------------------------------------------
+#-- "Quick" All-in-one binary download install
+#------------------------------------------------------------------------------
+RELEASE='v3.10.0'
+BUILD='dd10d17'
+PLATFORM='linux-64bit'
+wget -O /var/tmp/open-shift-server.tgz "https://github.com/openshift/origin/releases/download/${RELEASE}/openshift-origin-server-${RELEASE}-${BUILD}-${PLATFORM}.tar.gz"
+cd /opt
+tar zxf /var/tmp/open-shift-server.tgz
+ln -s "openshift-origin-server-${RELEASE}-${BUILD}-${PLATFORM}" openshift
+export PATH=/opt/openshift:"${PATH}"
+cd "${HOME}"
+# (as root)
+openshift start >var/log/openshift.log 2>&1 &
+export KUBECONFIG="${HOME}"/openshift.local.config/master/admin.kubeconfig
+export CURL_CA_BUNDLE="${HOME}"/openshift.local.config/master/ca.crt
+chmod +r "${HOME}"/openshift.local.config/master/admin.kubeconfig
+
+#------------------------------------------------------------------------------
+#-- "Full" Ansible-based install
+#------------------------------------------------------------------------------
+#-- Filesystems
 #-- (maybe) make a docker-vg (this may override /var/lib/docker)
 #   /var (and sub-fs) itself should have total of 5GB+ before below
 #   /tmp and /usr/local/bin should have 1GB+ free
@@ -26,6 +47,17 @@ EOF
 mount /var/lib/docker
 mount /var/lib/origin
 
+#-- On NFS node (if needed)
+mkdir /exports
+chown root:root /exports
+chmod 0755 /exports
+lvcreate --yes -L 30G -n exports vg01 && mkfs.xfs /dev/mapper/vg01-exports
+cat >>/etc/fstab <<EOF
+/dev/mapper/vg01-exports        /exports          xfs     defaults,relatime       0 0
+EOF
+mount /exports
+
+groupadd -g 980 docker
 #------------------------------------------------------------------------------
 #-- For RHEL -- additional installs before playbooks run
 yum install -y git iptables-services pyOpenSSL python-cryptography
@@ -38,8 +70,14 @@ yum install -y epel-release
 yum install -y ansible git docker python-cryptography python-crypto pyOpenSSL
 #------------------------------------------------------------------------------
 #-- Docker storage config
-rm -f /etc/docker/daemon.json && echo '{"storage-driver": "overlay2"}' > /etc/docker/daemon.json
-
+#   This is not needed as the storage-driver is provided as a flag
+# rm -f /etc/docker/daemon.json && echo '{"storage-driver": "overlay2"}' > /etc/docker/daemon.json
+#   This *may* be needed in some environments:
+rm -f /etc/docker/daemon.json && cat >/etc/docker/daemon.json <<EOF
+{
+    "insecure-registries": ["quay.io"]
+}
+EOF
 #-- Docker should set these on start
 sysctl -w net.ipv4.ip_forward=1
 sysctl -w net.bridge.bridge-nf-call-iptables=1
@@ -47,7 +85,7 @@ sysctl -w net.bridge.bridge-nf-call-ip6tables=1
 
 #------------------------------------------------------------------------------
 #-- Ansible based installer for okd
-git clone git@github.com:openshift/openshift-ansible.git
+git clone https://github.com/openshift/openshift-ansible.git
 cd openshift-ansible
 git checkout --track origin/release-3.10
 cd ..
@@ -57,4 +95,11 @@ cp openshift-ansible/inventory/hosts.example openshift-ansible-hosts
 
 ansible-playbook -i openshift-ansible-hosts openshift-ansible/playbooks/prerequisites.yml
 ansible-playbook -i openshift-ansible-hosts openshift-ansible/playbooks/deploy_cluster.yml
-#
+# ansible-playbook -i openshift-ansible/inventory/hosts.localhost openshift-ansible/playbooks/prerequisites.yml
+# ansible-playbook -i openshift-ansible/inventory/hosts.localhost openshift-ansible/playbooks/deploy_cluster.yml
+#------------------------------------------------------------------------------
+#--
+#------------------------------------------------------------------------------
+
+
+
