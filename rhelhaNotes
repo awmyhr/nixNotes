@@ -1,11 +1,10 @@
-#!/bin/bash NOT A REAL SHELL SCRIPT!
-# [SublimeLinter shellcheck-exclude:"SC2086" ]
-# This is a cut'n'paste scriptlet
-# be sure to read & understand what you're cutting & pasting!
-#
+#!/bin/bash
+# shellcheck disable=SC2154,SC2086
+#-- NOT A REAL SHELL SCRIPT!   This is a cut'n'paste scriptlet!
+#   Be sure to read & understand what you're cutting & pasting!
 ################################################################################
 ####  This document focuses on RHEL 6 HA running on VMWare
-####     See also: https://access.redhat.com/articles/1351733 
+####     See also: https://access.redhat.com/articles/1351733
 ################################################################################
 # In VMWare, disks that are to be shared need to be on a "physical" or "virtual"
 #   SCSI controller (depending on if you wish them to reside on different hosts)
@@ -27,7 +26,7 @@ vi /etc/lvm/lvm.conf
 # Set volume list parameter (local volumes only!). Find this line and modify:
 #   volume_list=["${VG1}","${VGX}"]
 # rebuild initramfs and reboot (assuming you running the current kernel)
-dracut -H -f 
+dracut -H -f
 reboot
 ################################################################################
 # Don't forget to create the mount points on all nodes
@@ -51,7 +50,7 @@ echo ${PASSWD} | passwd --stdin hacluster
 #   to the ignore directives of any network-based authentication client (such
 #   as Centrify)
 chkconfig pcsd on && service pcsd start
-pcs cluster auth ${NODE0} ${NODEX} 
+pcs cluster auth ${NODE0} ${NODEX}
 #
 # In some cases multicast must be turned off and Unicast should be used
 #   set "cman trasnport="udpu" in the line:
@@ -59,7 +58,7 @@ pcs cluster auth ${NODE0} ${NODEX}
 sed -i -e '/EXCEPT/ s/udp/udpu/' /etc/cluster/cluster.conf
 ################################################################################
 # Setup and start cluster
-pcs cluster setup [--two_node] --name ${CLUSTERNAME} ${NODE0} ${NODEX} 
+pcs cluster setup [--two_node] --name ${CLUSTERNAME} ${NODE0} ${NODEX}
 pcs cluster enable --all && pcs cluster start --all
 #
 # Create a vmware fence
@@ -87,7 +86,7 @@ pcs resource create ${NAME_FS}  Filesystem device=${FS_DEVPATH} directory=${FS_M
 pcs resource create ${NAME_MAILTO} MailTo email=${EMAIL} subject=${SUBJECT} --group ${NAME_GROUP}
 #
 # A group implies a sequential, require-all, coloctoin constraint
-#   with resource sequence being the same order they are added in. 
+#   with resource sequence being the same order they are added in.
 #   For refernece here is how to create such a constraint
 pcs constraint colocation set ${NAME_VIP} ${NAME_VG} ${NAME_FS} sequential=true require-all=true
 #

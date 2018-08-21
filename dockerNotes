@@ -1,5 +1,5 @@
 #!/bin/bash
-# [SublimeLinter shellcheck-exclude:"SC2154" ]
+# shellcheck disable=SC2154,SC2086
 #-- NOT A REAL SHELL SCRIPT!   This is a cut'n'paste scriptlet!
 #   Be sure to read & understand what you're cutting & pasting!
 #------------------------------------------------------------------------------
