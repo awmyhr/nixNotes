@@ -26,6 +26,7 @@ chmod +r "${HOME}"/openshift.local.config/master/admin.kubeconfig
 
 #------------------------------------------------------------------------------
 #-- "Full" Ansible-based install
+#   See also Ansible playbook 'osa-prep.yml'
 #------------------------------------------------------------------------------
 #-- Filesystems
 #-- (maybe) make a docker-vg (this may override /var/lib/docker)
@@ -75,9 +76,18 @@ yum install -y ansible git docker python-cryptography python-crypto pyOpenSSL
 #   This *may* be needed in some environments:
 rm -f /etc/docker/daemon.json && cat >/etc/docker/daemon.json <<EOF
 {
-    "insecure-registries": ["quay.io", "docker.io", "registry.access.redhat.com"]
+    "insecure-registries": [
+        "172.17.0.0/16",
+        "172.30.0.0/16",
+        "quay.io",
+        "docker.io",
+        "registry.access.redhat.com"
+    ]
 }
 EOF
+#------------------------------------------------------------------------------
+#-- End Install prep
+#------------------------------------------------------------------------------
 #-- Docker should set these on start
 sysctl -w net.ipv4.ip_forward=1
 sysctl -w net.bridge.bridge-nf-call-iptables=1

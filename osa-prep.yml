@@ -1,0 +1,137 @@
+# =============================================================================
+# Management: Ansible
+# Role:       osa-prep.yml
+# Type:       Playbook
+# Author:     MyHR, Andy <andy.myhr@metlife.com>
+# Revised:    2018-08-21
+# Created:    2018-08-21
+# =============================================================================
+# Based on steps listed in 'openShiftNotes'
+---
+# -----------------------------------------------------------------------------
+# - All Nodes
+# -----------------------------------------------------------------------------
+- hosts: nodes
+  vars:
+    add_docker_group: true
+    add_docker_insecure: true
+    filesystems:
+      - label: "var.lib.docker"
+        path: "/var/lib/docker"
+        options: "defaults,relatime"
+        size: "30G"
+        type: "xfs"
+        vg: "vg01"
+      - label: "var.lib.origin"
+        path: "/var/lib/origin"
+        options: "defaults,relatime"
+        size: "5G"
+        type: "xfs"
+        vg: "vg01"
+  tasks:
+    # - Disk Management
+    - name: Common LVs
+      lvol:
+        vg: "{{ item.vg }}"
+        lv: "{{ item.label }}"
+        size: "{{ item.size }}"
+        shrink: false
+      with_items: "{{ filesystems }}"
+    - name: Common filesystems
+      filesystem:
+        fstype: "{{ item.type }}"
+        dev: "/dev/mapper/{{ item.vg }}-{{ item.label }}"
+      with_items: "{{ filesystems }}"
+    - name: Common mounts
+      mount:
+        path: "{{ item.path }}"
+        src: "/dev/mapper/{{ item.vg }}-{{ item.label }}"
+        fstype: "{{ item.type }}"
+        opts: "{{ item.options }}"
+        state: mounted
+      with_items: "{{ filesystems }}"
+    # - Package Management
+    - name: Disable all RHSM repositories
+      rhsm_repository:
+        name: '*'
+        state: disabled
+    - name: Enable Base & Ansible repos
+      rhsm_repository:
+        name: "{{ item }}"
+        state: enabled
+      with_items:
+        - rhel-7-server-rpms
+        - rhel-7-server-satellite-tools-6.2-rpms
+        - rhel-7-server-ansible-2-rpms
+    - name: Install Base & Ansible RPMs
+      yum:
+        name: "{{ item }}"
+        state: latest
+      with_items:
+        - ansible
+        - git
+        - iptables-services
+        - pyOpenSSL
+        - python-cryptography
+    - name: Enable Extras repo
+      rhsm_repository:
+        name: rhel-7-server-extras-rpms
+        state: enabled
+    - name: Install Extras RPMs
+      yum:
+        name: "{{ item }}"
+        state: latest
+      with_items:
+        - atomic
+        - cockpit-docker
+        - docker
+        - python-crypto
+    # - Docker Configs
+    - name: Docker group
+      group:
+        name: docker
+        gid: 980
+        state: present
+      when: add_docker_group
+    - name: Docker insecure registries
+      copy:
+        content: '{ "insecure-registries": [ "172.17.0.0/16", "172.30.0.0/16",
+                  "quay.io", "docker.io", "registry.access.redhat.com" ] }'
+        dest: /etc/docker/daemon.json
+        owner: root
+        group: root
+        mode: 0644
+      when: add_docker_insecure
+# -----------------------------------------------------------------------------
+# - NFS Node
+# -----------------------------------------------------------------------------
+- hosts: nfs
+  vars:
+    filesystems:
+      - label: "exports"
+        path: "/exports"
+        options: "defaults,relatime"
+        size: "30G"
+        type: "xfs"
+        vg: "vg01"
+  tasks:
+    - name: NFS LVs
+      lvol:
+        vg: "{{ item.vg }}"
+        lv: "{{ item.label }}"
+        size: "{{ item.size }}"
+        shrink: false
+      with_items: "{{ filesystems }}"
+    - name: NFS filesystems
+      filesystem:
+        fstype: "{{ item.type }}"
+        dev: "/dev/mapper/{{ item.vg }}-{{ item.label }}"
+      with_items: "{{ filesystems }}"
+    - name: NFS mounts
+      mount:
+        path: "{{ item.path }}"
+        src: "/dev/mapper/{{ item.vg }}-{{ item.label }}"
+        fstype: "{{ item.type }}"
+        opts: "{{ item.options }}"
+        state: mounted
+      with_items: "{{ filesystems }}"
