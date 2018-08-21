@@ -4,7 +4,7 @@
 #------------------------------------------------------------------------------
 # name:    OKD (OpenShift Origin) Notes (miscNotes)
 # author:  awmyhr@gmail.com
-# revised: 20180817-170800
+# revised: 20180821-165542
 # created: 2018-08-10
 #------------------------------------------------------------------------------
 #-- "Quick" All-in-one binary download install
@@ -25,8 +25,10 @@ export CURL_CA_BUNDLE="${HOME}"/openshift.local.config/master/ca.crt
 chmod +r "${HOME}"/openshift.local.config/master/admin.kubeconfig
 
 #------------------------------------------------------------------------------
-#-- "Full" Ansible-based install
+#-- "Full" Ansible-based install prep
 #   See also Ansible playbook 'osa-prep.yml'
+#   This smooths over some common issues I've
+#   seen with running the Ansible playbooks.
 #------------------------------------------------------------------------------
 #-- Filesystems
 #-- (maybe) make a docker-vg (this may override /var/lib/docker)
@@ -96,15 +98,14 @@ sysctl -w net.bridge.bridge-nf-call-ip6tables=1
 #------------------------------------------------------------------------------
 #-- Ansible based installer for okd
 git clone https://github.com/openshift/openshift-ansible.git
-cd openshift-ansible
-git checkout --track origin/release-3.10
-cd ..
-cp openshift-ansible/inventory/hosts.example openshift-ansible-hosts
+cd openshift-ansible && git checkout --track origin/release-3.10 && cd ..
+cp openshift-ansible/inventory/hosts.example osa-hosts
 
-#-- Customize openshift-ansible-hosts
+#-- Customize osa-hosts
+ansible-playbook -i osa-hosts openshift-ansible/playbooks/prerequisites.yml
+ansible-playbook -i osa-hosts openshift-ansible/playbooks/deploy_cluster.yml
 
-ansible-playbook -i openshift-ansible-hosts openshift-ansible/playbooks/prerequisites.yml
-ansible-playbook -i openshift-ansible-hosts openshift-ansible/playbooks/deploy_cluster.yml
+#-- or run against localhost
 # ansible-playbook -i openshift-ansible/inventory/hosts.localhost openshift-ansible/playbooks/prerequisites.yml
 # ansible-playbook -i openshift-ansible/inventory/hosts.localhost openshift-ansible/playbooks/deploy_cluster.yml
 #------------------------------------------------------------------------------
