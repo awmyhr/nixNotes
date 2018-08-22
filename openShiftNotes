@@ -7,6 +7,21 @@
 # revised: 20180822-164710
 # created: 2018-08-10
 #------------------------------------------------------------------------------
+#-- Minishift stuff
+#------------------------------------------------------------------------------
+# OpenShift server start/stop.
+minishift [start|stop]
+# Get minishift IP address
+minishift ip
+# Get minishift env (PATH) settings
+minishift oc-env
+# The server is accessible via web console at:
+#     https://192.168.42.175:8443
+# To login in as developer
+oc login -u developer:developer
+# To login as administrator:
+oc login -u system:admin
+#------------------------------------------------------------------------------
 #-- "Quick" All-in-one binary download install
 #------------------------------------------------------------------------------
 RELEASE='v3.10.0'
@@ -141,3 +156,40 @@ docker login -u openshift -p "$(oc whoami -t)" "${DR_IP}:${DR_PORT}"
 #-- add registry permissions
 oc policy add-role-to-user registry-viewer "${USER}"
 oc policy add-role-to-user registry-editor "${USER}"
+
+
+#------------------------------------------------------------------------------
+#--  Sample application
+#------------------------------------------------------------------------------
+oc new-project test-project
+# Create a Node.js example app:
+oc new-app https://github.com/openshift/nodejs-ex -l name=myapp
+# Track the build log until the app is built and deployed:
+oc logs -f bc/nodejs-ex
+# Expose a route to the service:
+oc expose svc/nodejs-ex
+# Access the application:
+minishift openshift service nodejs-ex --in-browser
+# scale it
+oc scale --replicas=2 dc nodejs-ex
+# get service/dc/bc info (these can be 'resource name' or 'resource/name')
+oc get svc nodejs-ex
+oc get dc nodejs-ex
+oc get bc nodejs-ex
+# more detailed info
+oc describe svc nodejs-ex
+# delete the project
+oc delete project network-test
+
+#------------------------------------------------------------------------------
+#-- Some Openshift stuff
+#------------------------------------------------------------------------------
+# list pods in current project
+oc get pods [-o wide]
+# status of current project
+oc status
+# get info on 'everything' in project
+oc get all
+# log into a pod
+oc rsh [podname]
+
