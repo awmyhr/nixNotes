@@ -16,7 +16,7 @@ minishift ip
 # Get minishift env (PATH) settings
 minishift oc-env
 # The server is accessible via web console at:
-#     https://192.168.42.175:8443
+#     https://$(minishift ip):8443
 # To login in as developer
 oc login -u developer:developer
 # To login as administrator:
