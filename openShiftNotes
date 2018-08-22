@@ -4,7 +4,7 @@
 #------------------------------------------------------------------------------
 # name:    OKD (OpenShift Origin) Notes (miscNotes)
 # author:  awmyhr@gmail.com
-# revised: 20180821-165542
+# revised: 20180822-164710
 # created: 2018-08-10
 #------------------------------------------------------------------------------
 #-- "Quick" All-in-one binary download install
@@ -26,7 +26,7 @@ chmod +r "${HOME}"/openshift.local.config/master/admin.kubeconfig
 
 #------------------------------------------------------------------------------
 #-- "Full" Ansible-based install prep
-#   See also Ansible playbook 'osa-prep.yml'
+#   See also Ansible playbook 'openShiftPrep.yml'
 #   This smooths over some common issues I've
 #   seen with running the Ansible playbooks.
 #------------------------------------------------------------------------------
@@ -72,28 +72,13 @@ yum install -y atomic cockpit-docker docker python-crypto
 yum install -y epel-release
 yum install -y ansible git docker python-cryptography python-crypto pyOpenSSL
 #------------------------------------------------------------------------------
-#-- Docker storage config
-#   This is not needed as the storage-driver is provided as a flag
-# rm -f /etc/docker/daemon.json && echo '{"storage-driver": "overlay2"}' > /etc/docker/daemon.json
-#   This *may* be needed in some environments:
-rm -f /etc/docker/daemon.json && cat >/etc/docker/daemon.json <<EOF
-{
-    "insecure-registries": [
-        "172.17.0.0/16",
-        "172.30.0.0/16",
-        "quay.io",
-        "docker.io",
-        "registry.access.redhat.com"
-    ]
-}
-EOF
-#------------------------------------------------------------------------------
 #-- End Install prep
 #------------------------------------------------------------------------------
-#-- Docker should set these on start
+#-- Docker should set this on start
 sysctl -w net.ipv4.ip_forward=1
-sysctl -w net.bridge.bridge-nf-call-iptables=1
-sysctl -w net.bridge.bridge-nf-call-ip6tables=1
+#-- From what I can tell these are just annoying to see, not impactful
+# sysctl -w net.bridge.bridge-nf-call-iptables=1
+# sysctl -w net.bridge.bridge-nf-call-ip6tables=1
 
 #------------------------------------------------------------------------------
 #-- Ansible based installer for okd
@@ -102,15 +87,57 @@ cd openshift-ansible && git checkout --track origin/release-3.10 && cd ..
 cp openshift-ansible/inventory/hosts.example osa-hosts
 
 #-- Customize osa-hosts
+#   Here are the vars I've worked with
+# [OSEv3:vars]
+# debug_level=2
+# ansible_user=root
+# os_firewall_use_firewalld=True
+# openshift_deployment_type=origin
+# openshift_release="3.10"
+# openshift_portal_net=172.30.0.0/16
+# osm_cluster_network_cidr=10.128.0.0/14
+# #-- This sets up basic htpasswd authentication
+# openshift_master_identity_providers=[{'name': 'htpasswd_auth', 'login': 'true', 'challenge': 'true', 'kind': 'HTPasswdPasswordIdentityProvider',}]
+# #-- Some environments will need to set insecure registries
+# openshift_docker_insecure_registries=172.17.0.0/16,172.30.0.0/16,quay.io,docker.io,registry.access.redhat.com
+
 ansible-playbook -i osa-hosts openshift-ansible/playbooks/prerequisites.yml
 ansible-playbook -i osa-hosts openshift-ansible/playbooks/deploy_cluster.yml
 
 #-- or run against localhost
 # ansible-playbook -i openshift-ansible/inventory/hosts.localhost openshift-ansible/playbooks/prerequisites.yml
 # ansible-playbook -i openshift-ansible/inventory/hosts.localhost openshift-ansible/playbooks/deploy_cluster.yml
+
 #------------------------------------------------------------------------------
-#--
+#-- Post install quick cheks
 #------------------------------------------------------------------------------
+#-- Check nodes are running
+oc get nodes
+#-- list all currently running pods
+oc get pods --all-namespaces -o wide
+#-- Get status
+oc status
+#-- Make sure we have NTP
+timedatectl
+#-- Get current entropy, should be over 1000, advise to alert if under 800
+cat /proc/sys/kernel/random/entropy_avail
+#-- Check default storage class
+oc get storageclass
 
+#-- login as system:admin (aka superuser) while os user is root
+oc login -u system:admin
+#------------------------------------------------------------------------------
+#-- Registry schtuff
+#------------------------------------------------------------------------------
+oc logs dc/docker-registry
+oc describe svc/docker-registry
+oc describe dc/docker-registry
+oc describe pod "$(oc get pods --no-headers | grep docker-registry | cut -f1 -d' ')"
+docker ps --filter=name=registry_docker-registry.*_default_
+docker login "$(docker ps -q --filter=name=registry_docker-registry.*_default_)"
 
+docker login -u openshift -p "$(oc whoami -t)" "${DR_IP}:${DR_PORT}"
 
+#-- add registry permissions
+oc policy add-role-to-user registry-viewer "${USER}"
+oc policy add-role-to-user registry-editor "${USER}"
