@@ -4,7 +4,7 @@
 #------------------------------------------------------------------------------
 # name:    Misc. Notes (miscNotes)
 # author:  awmyhr@gmail.com
-# revised: 20180626-133614
+# revised: 20180823-114042
 # created: 2018-06-26
 #------------------------------------------------------------------------------
 #-- XDG Base Directory Specification
@@ -405,13 +405,12 @@ rhel-7-server-rpms
 rhel-7-server-ansible-2-rpms
 rhel-7-server-extras-rpms
 rhel-7-server-optional-rpms
-Metlife_epel_EPEL_7_Server
 
 
 rhel-7-server-optional-rpms
 golang
 
-Metlife_epel_EPEL_7_Server
+*epel*
 cargo rust rust-analysis rust-debugger-common
 
 pip install alabaster \
@@ -442,7 +441,7 @@ python2-pygments-markdown-lexer
 python-markdown
 
     && yum-config-manager -q --enable rhel-7-server-optional-rpms >/dev/null \
-    && yum-config-manager -q --enable Metlife_epel_EPEL_7_Server >/dev/null \
+    && yum-config-manager -q --enable *epel* >/dev/null \
     && yum -y install java-1.8.0-openjdk \
                       texlive-collection-latexrecommended \
                       texlive-environ \
