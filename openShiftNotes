@@ -17,10 +17,6 @@ minishift ip
 minishift oc-env
 # The server is accessible via web console at:
 #     https://$(minishift ip):8443
-# To login in as developer
-oc login -u developer:developer
-# To login as administrator:
-oc login -u system:admin
 #------------------------------------------------------------------------------
 #-- "Quick" All-in-one binary download install
 #------------------------------------------------------------------------------
@@ -28,8 +24,7 @@ RELEASE='v3.10.0'
 BUILD='dd10d17'
 PLATFORM='linux-64bit'
 wget -O /var/tmp/open-shift-server.tgz "https://github.com/openshift/origin/releases/download/${RELEASE}/openshift-origin-server-${RELEASE}-${BUILD}-${PLATFORM}.tar.gz"
-cd /opt
-tar zxf /var/tmp/open-shift-server.tgz
+cd /opt && tar zxf /var/tmp/open-shift-server.tgz
 ln -s "openshift-origin-server-${RELEASE}-${BUILD}-${PLATFORM}" openshift
 export PATH=/opt/openshift:"${PATH}"
 cd "${HOME}"
@@ -97,11 +92,12 @@ sysctl -w net.ipv4.ip_forward=1
 
 #------------------------------------------------------------------------------
 #-- Ansible based installer for okd
-git clone https://github.com/openshift/openshift-ansible.git
-cd openshift-ansible && git checkout --track origin/release-3.10 && cd ..
-cp openshift-ansible/inventory/hosts.example osa-hosts
+OSADIR="${TMPDIR:-/tmp}"/osa
+git clone https://github.com/openshift/openshift-ansible.git "${OSADIR}"
+cd "${OSADIR}" && git checkout --track origin/release-3.10 && cd - || return
+cp "${OSADIR}"/inventory/hosts.example okd-hosts
 
-#-- Customize osa-hosts
+#-- Customize okd-hosts
 #   Here are the vars I've worked with
 # [OSEv3:vars]
 # debug_level=2
@@ -116,12 +112,12 @@ cp openshift-ansible/inventory/hosts.example osa-hosts
 # #-- Some environments will need to set insecure registries
 # openshift_docker_insecure_registries=172.17.0.0/16,172.30.0.0/16,quay.io,docker.io,registry.access.redhat.com
 
-ansible-playbook -i osa-hosts openshift-ansible/playbooks/prerequisites.yml
-ansible-playbook -i osa-hosts openshift-ansible/playbooks/deploy_cluster.yml
+ansible-playbook -i okd-hosts "${OSADIR}"/playbooks/prerequisites.yml
+ansible-playbook -i okd-hosts "${OSADIR}"/playbooks/deploy_cluster.yml
 
 #-- or run against localhost
-# ansible-playbook -i openshift-ansible/inventory/hosts.localhost openshift-ansible/playbooks/prerequisites.yml
-# ansible-playbook -i openshift-ansible/inventory/hosts.localhost openshift-ansible/playbooks/deploy_cluster.yml
+# ansible-playbook -i "${OSADIR}"/inventory/hosts.localhost "${OSADIR}"/playbooks/prerequisites.yml
+# ansible-playbook -i "${OSADIR}"/inventory/hosts.localhost "${OSADIR}"/playbooks/deploy_cluster.yml
 
 #------------------------------------------------------------------------------
 #-- Post install quick cheks
@@ -130,6 +126,8 @@ ansible-playbook -i osa-hosts openshift-ansible/playbooks/deploy_cluster.yml
 oc get nodes
 #-- list all currently running pods
 oc get pods --all-namespaces -o wide
+# get info on 'everything' in project
+oc get all
 #-- Get status
 oc status
 #-- Make sure we have NTP
@@ -138,6 +136,8 @@ timedatectl
 cat /proc/sys/kernel/random/entropy_avail
 #-- Check default storage class
 oc get storageclass
+# log into a pod
+oc rsh "${PODNAME}"
 
 #-- login as system:admin (aka superuser) while os user is root
 oc login -u system:admin
@@ -168,28 +168,24 @@ oc new-app https://github.com/openshift/nodejs-ex -l name=myapp
 oc logs -f bc/nodejs-ex
 # Expose a route to the service:
 oc expose svc/nodejs-ex
-# Access the application:
+# If running Minishift, access the application:
 minishift openshift service nodejs-ex --in-browser
 # scale it
 oc scale --replicas=2 dc nodejs-ex
 # get service/dc/bc info (these can be 'resource name' or 'resource/name')
 oc get svc nodejs-ex
-oc get dc nodejs-ex
-oc get bc nodejs-ex
+oc get dc  nodejs-ex
+oc get bc  nodejs-ex
 # more detailed info
 oc describe svc nodejs-ex
 # delete the project
-oc delete project network-test
+oc delete project test-project
 
 #------------------------------------------------------------------------------
-#-- Some Openshift stuff
+#-- GlusterFS stuff
 #------------------------------------------------------------------------------
-# list pods in current project
-oc get pods [-o wide]
-# status of current project
-oc status
-# get info on 'everything' in project
-oc get all
-# log into a pod
-oc rsh [podname]
+yum update glusterfs-fuse
+#-- Enable writing from pod to remote GlusterFS server
+setsebool -P virt_sandbox_use_fusefs on
+setsebool -P virt_use_fusefs on
 
