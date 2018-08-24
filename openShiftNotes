@@ -23,13 +23,14 @@ minishift oc-env
 RELEASE='v3.10.0'
 BUILD='dd10d17'
 PLATFORM='linux-64bit'
-wget -O /var/tmp/open-shift-server.tgz "https://github.com/openshift/origin/releases/download/${RELEASE}/openshift-origin-server-${RELEASE}-${BUILD}-${PLATFORM}.tar.gz"
-cd /opt && tar zxf /var/tmp/open-shift-server.tgz
-ln -s "openshift-origin-server-${RELEASE}-${BUILD}-${PLATFORM}" openshift
-export PATH=/opt/openshift:"${PATH}"
-cd "${HOME}"
 # (as root)
+wget -O /var/tmp/open-shift-server.tgz "https://github.com/openshift/origin/releases/download/${RELEASE}/openshift-origin-server-${RELEASE}-${BUILD}-${PLATFORM}.tar.gz"
+cd /opt \
+    && tar zxf /var/tmp/open-shift-server.tgz \
+    && ln -s "openshift-origin-server-${RELEASE}-${BUILD}-${PLATFORM}" openshift \
+    && export PATH=/opt/openshift:"${PATH}" && cd - || return
 openshift start >var/log/openshift.log 2>&1 &
+# may or may not need to set these
 export KUBECONFIG="${HOME}"/openshift.local.config/master/admin.kubeconfig
 export CURL_CA_BUNDLE="${HOME}"/openshift.local.config/master/ca.crt
 chmod +r "${HOME}"/openshift.local.config/master/admin.kubeconfig
@@ -85,7 +86,7 @@ yum install -y ansible git docker python-cryptography python-crypto pyOpenSSL
 #-- End Install prep
 #------------------------------------------------------------------------------
 #-- Docker should set this on start
-sysctl -w net.ipv4.ip_forward=1
+# sysctl -w net.ipv4.ip_forward=1
 #-- From what I can tell these are just annoying to see, not impactful
 # sysctl -w net.bridge.bridge-nf-call-iptables=1
 # sysctl -w net.bridge.bridge-nf-call-ip6tables=1
@@ -111,11 +112,28 @@ cp "${OSADIR}"/inventory/hosts.example okd-hosts
 # openshift_master_identity_providers=[{'name': 'htpasswd_auth', 'login': 'true', 'challenge': 'true', 'kind': 'HTPasswdPasswordIdentityProvider',}]
 # #-- Some environments will need to set insecure registries
 # openshift_docker_insecure_registries=172.17.0.0/16,172.30.0.0/16,quay.io,docker.io,registry.access.redhat.com
+# #-- Setup NFS-based persistant storage for the docker registry
+# #   Keep in mind this is an unsupported config, and must be flagged thus
+# openshift_enable_unsupported_configurations=True
+# openshift_hosted_registry_storage_kind=nfs
+# openshift_hosted_registry_storage_access_modes=['ReadWriteMany']
+# openshift_hosted_registry_storage_nfs_directory=/exports
+# openshift_hosted_registry_storage_nfs_options='*(rw,root_squash)'
+# openshift_hosted_registry_storage_volume_name=registry
+# openshift_hosted_registry_storage_volume_size=5Gi
 
+#-- Now run the playbooks
 ansible-playbook -i okd-hosts "${OSADIR}"/playbooks/prerequisites.yml
 ansible-playbook -i okd-hosts "${OSADIR}"/playbooks/deploy_cluster.yml
+#-- I have always had to run the deploy_cluster playbook a second time
+#   after rebooting all the nodes.
+#   However, before this:
+# TASK [openshift_web_console : Verify that the console is running] *****************************
+#   I've needed to run this:
+# sysctl -w net.ipv4.ip_forward=1
+#   But this doesn't work the first time around
 
-#-- or run against localhost
+#-- or run against localhost for a single, all-in-one setup
 # ansible-playbook -i "${OSADIR}"/inventory/hosts.localhost "${OSADIR}"/playbooks/prerequisites.yml
 # ansible-playbook -i "${OSADIR}"/inventory/hosts.localhost "${OSADIR}"/playbooks/deploy_cluster.yml
 
@@ -157,7 +175,9 @@ docker login -u openshift -p "$(oc whoami -t)" "${DR_IP}:${DR_PORT}"
 oc policy add-role-to-user registry-viewer "${USER}"
 oc policy add-role-to-user registry-editor "${USER}"
 
-
+#-- create pv/pvc files for docker-registry, then add them
+oc create -f docker-registry-nfs-pv.yml
+oc create -f docker-registry-nfs-pvc.yml
 #------------------------------------------------------------------------------
 #--  Sample application
 #------------------------------------------------------------------------------
@@ -182,9 +202,16 @@ oc describe svc nodejs-ex
 oc delete project test-project
 
 #------------------------------------------------------------------------------
+#-- NFS stuff
+#------------------------------------------------------------------------------
+#-- Enable writing from pod to remote NFS server
+setsebool -P virt_sandbox_use_nfs on
+setsebool -P virt_use_nfs on
+
+#------------------------------------------------------------------------------
 #-- GlusterFS stuff
 #------------------------------------------------------------------------------
-yum update glusterfs-fuse
+yum install glusterfs-fuse
 #-- Enable writing from pod to remote GlusterFS server
 setsebool -P virt_sandbox_use_fusefs on
 setsebool -P virt_use_fusefs on

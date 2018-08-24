@@ -88,7 +88,7 @@ vg01 var.cache.pulp    /var/cache/pulp     20G 0755 apache:apache
 vg01 var.lib.mongodb   /var/lib/mongodb   100G 0755 mongodb:mongodb
 vg01 var.lib.pulp      /var/lib/pulp      500G 0755 apache:apache
 
-vg02 backup            /backup            100G 0755 root:root
+vg02 backup            /backup            750G 0755 root:root
 #-- space needed for backup
 du -hsc /etc /root/ssl-build /var/www/html/pub /var/lib/pgsql /var/lib/mongodb /var/lib/pulp
 #------------------------------------------------------------------------------

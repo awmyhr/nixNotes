@@ -2,7 +2,7 @@
 # Management: Ansible
 # Role:       openShiftPrep.yml
 # Type:       Playbook
-# Author:     MyHR, Andy <awmyhr@gmail.com>
+# Author:     awmyhr <awmyhr@gmail.com>
 # Revised:    2018-08-21
 # Created:    2018-08-21
 # =============================================================================
@@ -14,7 +14,6 @@
 - hosts: nodes
   vars:
     add_docker_group: true
-    # add_docker_insecure: true
     filesystems:
       - label: "var.lib.docker"
         path: "/var/lib/docker"
@@ -103,15 +102,6 @@
         gid: 980
         state: present
       when: add_docker_group
-    # - name: Docker insecure registries
-    #   copy:
-    #     content: '{ "insecure-registries": [ "172.17.0.0/16", "172.30.0.0/16",
-    #               "quay.io", "docker.io", "registry.access.redhat.com" ] }'
-    #     dest: /etc/docker/daemon.json
-    #     owner: root
-    #     group: root
-    #     mode: 0644
-    #   when: add_docker_insecure
 # -----------------------------------------------------------------------------
 # - NFS Node
 # -----------------------------------------------------------------------------
