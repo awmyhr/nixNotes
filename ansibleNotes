@@ -1,78 +1,83 @@
-#!/bin/bash NOT A REAL SHELL SCRIPT!
-# This is a cut'n'paste scriptlet
-# be sure to read & understand what you're cutting & pasting!
-#
-# ISO date stamp
-`date +%Y%m%d-%H%M`
-###############################################################################
-#Configuration Locations - first found ########################################
-#   Contents of ${ANSIBLE_CONFIG}
+#!/bin/bash
+#-- NOT A REAL SHELL SCRIPT!   This is a cut'n'paste scriptlet!
+#   Be sure to read & understand what you're cutting & pasting!
+#------------------------------------------------------------------------------
+# name:    Ansible Notes (ansibleNotes)
+# author:  awmyhr@gmail.com
+# revised: 20180824-101606
+# created: 2016-??-??
+#------------------------------------------------------------------------------
+#-- Configuration Locations - first found
+#------------------------------------------------------------------------------
+#-- Contents of ${ANSIBLE_CONFIG}
 #   ./ansible.cfg
 #   ~/.ansible.cfg
 #   /etc/ansible/ansible.cfg
-###############################################################################
-#Add-hoc commands
-# test connection
-ansible all -m ping
-# Common flags:
-#	-o            print each result on one line
-#	-k 	          ask for password (i.e., don't use key-based)
-#	-b, --become  run operation using sudo (default, see become-method) (also -s, --sudo [deprecated])
+#------------------------------------------------------------------------------
+#-- Common flags
+#------------------------------------------------------------------------------
+#   -o            print each result on one line
+#   -k            ask for password (i.e., don't use key-based)
+#   -b, --become  run operation using sudo (default, see become-method) (also -s, --sudo [deprecated])
 #   -C, --check   don't make changes, test what would be changed
 #   -f <num>      run <num> parallel processes (default 5)
-#	-u <user>     log into servers as <user>
+#   -u <user>     log into servers as <user>
 #   -B <num>      run in background, kill task after <num> seconds
 #   -t <dir>      save contents in this output <dir>, results in file named for each host
 #   --become-method=BECOME_METHOD
-#                 Privilege escalation method to use (default=sudo), valid choices: [ sudo | su |
-#                   pbrun | pfexec | runas | doas | dzdo ]
-#
-# Execute arbitrary commands, no -m will imply -m command
-ansible <hostpattern> -a "<command>"
-ansible <hostpattern> -m command -a "<command>"
-# Execute arbitrary commands in a shell environment
-ansible <hostpattern> -m shell -a "<command>"
-# install/remove a package via yum
-ansible <hostpattern> -m yum -a "name=<package> state=[present|absent]" --sudo
-#
-###############################################################################
-#Copy file to hosts
-ansible <hostpattern> -m copy -a "src=</path/to/src/file> dest=</path/to/dest/file> mode=755"
-#Copy file from hosts
-ansible <hostpattern> -m fetch -a "src=</path/to/src/file> dest=</path/to/dest/directory>"
-#
-###############################################################################
-#Get info on a host
-ansible <host> -m setup
-# filter keys
-ansible <host> -m setup -a 'filter=<keypattern>'
-###############################################################################
-#Vault commands [manage encrypted ansible vars files (YAML)]
-ansible-vault encrypt <file>
-# when running a command w/encrypted file, add flag --ask-vault-pass
-#
-###############################################################################
-#Doc commands [show documentation on Ansible modules]
-ansible-doc [-M <modulepath>] <modulename>
-#
-###############################################################################
-#Pull commands [pull playbooks from VCS server and run them using this machine as the target.]
-ansible-pull
-#
-###############################################################################
-#Galaxy commands [manage roles using galaxy.ansible.com (or file)]
-ansible-galaxy
-#
-###############################################################################
-#Playbook Commands
+#                 Privilege escalation method to use (default=sudo), valid choices:
+#                   [ sudo | su | pbrun | pfexec | runas | doas | dzdo ]
+#   --list-hosts  outputs a list of matching hosts; does not execute anything
+#   --list-hosts  outputs a list of matching hosts; does not execute anything
+#------------------------------------------------------------------------------
+#-- Ad-hoc commands
+#------------------------------------------------------------------------------
+#-- Test connection to all inventory hosts
+ansible all -m ping
+#-- Execute arbitrary commands (no '-m ${MODULE_NAME}' implies '-m command')
+ansible "${HOST_FILTER}" -a "${COMMAND}"
+#-- Execute arbitrary commands in a shell environment
+ansible "${HOST_FILTER}" -m shell  -a "${COMMAND}"
+#-- Get all facts from hosts
+ansible "${HOST_FILTER}" -m setup
+#-- Get specific facts from hosts
+ansible "${HOST_FILTER}" -m setup  -a "filter=${KEY_PATTERN}"
+#-- Copy file *to* hosts
+ansible "${HOST_FILTER}" -m copy   -a "src=${SRC_FILE} dest=${TGT_FILE} mode=${FILE_MODE:-0644}"
+#-- Copy file *from* hosts
+ansible "${HOST_FILTER}" -m fetch  -a "src=${SRC_FILE} dest=${TGT_FILE}"
+# install/remove a package via yum as root
+ansible "${HOST_FILTER}" -b -m yum -a "name=${PKG_NAME} state=${PKG_STATE:-present}"
+#------------------------------------------------------------------------------
+#-- Ansible Playbook stuff
+#------------------------------------------------------------------------------
 # Syntax check
-ansible-playbook --syntax-check <pbfile>
-# List hosts or tasks
-ansible-playbook <pbfile> --list-[hosts|tasks]
-# Run on all hosts defined 
+ansible-playbook --syntax-check "${PLAYBOOK}"
+# List of tasks that would be executed
+ansible-playbook --list-tasks "${PLAYBOOK}"
+# Run on all hosts defined
 #   test run add -C
 #   dry run add -C -D
 #   single host add -l <hostname>
-ansible-playbook <pbfile>
-#
-###############################################################################
+ansible-playbook "${PLAYBOOK}"
+#------------------------------------------------------------------------------
+#-- Ansible Galaxy stuff
+#------------------------------------------------------------------------------
+#-- Add stuff
+ansible-galaxy
+#------------------------------------------------------------------------------
+#-- Ansible Vault stuff
+#------------------------------------------------------------------------------
+#-- Basic file encryption
+#   When running a command w/Vault encrypted files, add flag '--ask-vault-pass'
+ansible-vault encrypt "${FILE}"
+#------------------------------------------------------------------------------
+#-- Misc Commands
+#------------------------------------------------------------------------------
+#-- Show documentation on modules (-M optional if docs in standard location)
+ansible-doc -M "${PATH_TO_MODULES}" "${MODULE_NAME}"
+#-- Pull commands [pull playbooks from VCS server and run them using this machine as the target.]
+ansible-pull
+#------------------------------------------------------------------------------
+#--
+#------------------------------------------------------------------------------
