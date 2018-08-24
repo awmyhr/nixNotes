@@ -79,5 +79,48 @@ ansible-doc -M "${PATH_TO_MODULES}" "${MODULE_NAME}"
 #-- Pull commands [pull playbooks from VCS server and run them using this machine as the target.]
 ansible-pull
 #------------------------------------------------------------------------------
-#--
+#-- AWX install/setup (okd/OpenShift)
+#   Currently this assumes one is running on an okd master node or system
+#   w/minishift, and are using the official hosted images
 #------------------------------------------------------------------------------
+#-- Ansible based installer for awx
+AWXDIR="${TMPDIR:-/tmp}"/awx
+AWXUSER='awx-admin'
+AWXPASS='tower'
+rm -Rf "${AWXDIR}" /tmp/awx-config
+git clone https://github.com/ansible/awx.git "${AWXDIR}"
+#-- if one wants a specific version. You'll also need to
+#   set 'dockerhub_version' in awx-hosts
+# AWXREL='1.0.7'
+# cd "${AWXDIR}" \
+#     && git fetch --all --tags --prune \
+#     && git checkout tags/"${AWXREL}" \
+#     && cd - || return
+cp "${AWXDIR}"/installer/inventory awx-hosts || :
+
+#-- Create user for the awx project, this is for htpasswd backed authentication:
+htpasswd -b /etc/origin/master/htpasswd "${AWXUSER}" "${AWXPASS}"
+#-- Switch to the user (to create okd objects), then back
+oc login "$(hostname -f)":8443 -u "${AWXUSER}" -p "${AWXPASS}"
+oc login -u system:admin
+
+#-- I had to grant cluster-admin privvies to the user
+oc adm policy add-cluster-role-to-user cluster-admin "${AWXUSER}"
+
+#-- Customize awx-hosts
+#   Here are some vars I've used
+# [all:vars]
+# default_admin_user=awx-admin
+# default_admin_password=tower
+# pg_password=tower
+# openshift_host=127.0.0.1:8443
+# openshift_project=awx-proj
+# openshift_user=awx-admin
+# #-- Only set this to true if okd has self-signed certs
+# openshift_skip_tls_verify=True
+# #-- Only set this to true for demo/temp; However, if set to 'False',
+# #   one *must* have a PVC in the project named 'postgresql' of at least 10G
+# openshift_pg_emptydir=True
+
+ansible-playbook -i awx-hosts "${AWXDIR}"/installer/install.yml -e openshift_password="${AWXPASS}"
+

@@ -2,7 +2,7 @@
 #-- NOT A REAL SHELL SCRIPT!   This is a cut'n'paste scriptlet!
 #   Be sure to read & understand what you're cutting & pasting!
 #------------------------------------------------------------------------------
-# name:    OKD (OpenShift Origin) Notes (miscNotes)
+# name:    OKD (aka OpenShift Origin) Notes (openShiftNotes)
 # author:  awmyhr@gmail.com
 # revised: 20180822-164710
 # created: 2018-08-10
@@ -94,8 +94,9 @@ yum install -y ansible git docker python-cryptography python-crypto pyOpenSSL
 #------------------------------------------------------------------------------
 #-- Ansible based installer for okd
 OSADIR="${TMPDIR:-/tmp}"/osa
+OSAREL='3.10'
 git clone https://github.com/openshift/openshift-ansible.git "${OSADIR}"
-cd "${OSADIR}" && git checkout --track origin/release-3.10 && cd - || return
+cd "${OSADIR}" && git checkout --track origin/release-"${OSAREL}" && cd - || return
 cp "${OSADIR}"/inventory/hosts.example okd-hosts
 
 #-- Customize okd-hosts
@@ -215,4 +216,23 @@ yum install glusterfs-fuse
 #-- Enable writing from pod to remote GlusterFS server
 setsebool -P virt_sandbox_use_fusefs on
 setsebool -P virt_use_fusefs on
+
+#------------------------------------------------------------------------------
+#-- User stuff
+#------------------------------------------------------------------------------
+oc get users
+oc get identity
+#-- must delete httpasswd, user, and identity
+htpasswd -D /etc/origin/master/htpasswd  "${USER_NAME}"
+oc delete user "${USER_NAME}"
+oc delete identity "${USER_IDENTITY}"
+oc describe scc "${SCC_NAME}"
+
+oc describe clusterrole.rbac cluster-admin
+oc describe clusterrolebinding.rbac cluster-admin
+oc adm policy who-can adm policy
+oc adm policy add-cluster-role-to-user cluster-admin "${USER_NAME}"
+oc get rolebinding
+
+
 
