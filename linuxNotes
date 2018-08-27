@@ -1,28 +1,79 @@
-#!/bin/bash NOT A REAL SHELL SCRIPT!
-# This is a cut'n'paste scriptlet
-# be sure to read & understand what you're cutting & pasting!
-#
-# ISO date stamp
-$(date +%Y%m%d-%H%M)
-################################################################################
-### Some VM settings:
-# Display RAM: Server 9M; Desktop 64MB
-################################################################################
-
-################################################################################
-# methods to determine original build date
-ls -alct ~root
+#!/bin/bash
+#-- NOT A REAL SHELL SCRIPT!   This is a cut'n'paste scriptlet!
+#   Be sure to read & understand what you're cutting & pasting!
+#------------------------------------------------------------------------------
+# name:    Linux Notes (linuxNotes)
+# author:  awmyhr@gmail.com
+# revised: 20180827-150033
+# created: 2014-??-??
+#------------------------------------------------------------------------------
+#-- ISO date stamp
+#------------------------------------------------------------------------------
+#-- ISO 8601 basic modified
+date +%Y%m%d-%H%M%S
+#   More correct
+date --iso-8601=seconds
+date +%Y-%m-%dT%H:%M:%S%z
+#   Seconds since 1970-01-01 00:00:00 UTC
+date +%s
+#------------------------------------------------------------------------------
+#-- methods to determin original build date
+#   beware that VMs built from common image may not work w/these
+#------------------------------------------------------------------------------
+#-- ext2/3/4 filesystem - no real xfs equivalent
 tune2fs -l /dev/sda1 | grep created
-ls -l /etc/ssh/ssh_host_key
-rpm -qi basesystem | grep "Install Date"
-
-# beware that VMs built from common image may not work w/the above
-#    As of now, this is the best way I've found fer these
-ls -l /etc/sysconfig/network /etc/sysconfig/rhn/systemid /etc/ssh/ssh_host_key
-
-################################################################################
-#PAM-style password locks
-#To check:
+#-- RPM based system
+date +%Y%m%d-%H%M --date=@"$(rpm -q --qf '%{INSTALLTIME}' basesystem)"
+ls -alct ~root
+ls -l /etc/ssh/ssh_host_* /etc/sysconfig/network
+#------------------------------------------------------------------------------
+#-- Some 'Reliable' ways to identify an RPM-based system.
+#   Theese have been tested as working on various RHEL 5/6/7 32-/64-bit sytems
+#   Test system output from:
+#       1) RHEL 7.5  64-bit vm
+#       2) RHEL 5.10 64-bit
+#       3) CentOS 7.5 64-bit container (not likely to have kernel pkg installed)
+#------------------------------------------------------------------------------
+# 1) '7.5' 2) '5Server' 3) '7'
+rpm -q --qf '%{VERSION}' "$(rpm -qa '(centos|redhat)-release(|-server)')"
+# 1) '7' 2) '5' 3) '7'
+rpm -q --qf '%{VERSION}' "$(rpm -qa '(centos|redhat)-release(|-server)')" | cut -c1
+# 1) '7.el7' 2) '5.1.1' 3) '7.el7.centos'
+rpm -q --qf '%{RELEASE}' basesystem
+# 1) 'Red Hat' 2) 'Red Hat' 3) n/a
+rpm -q --qf '%{DISTRIBUTION}' kernel-$(uname -r)
+# 1) 'redhat' 2) redhat' 3) 'redhat'
+rpm -E '%_vendor'
+# 1) 'x86_64' 2) 'x86_64' 3) 'x86_64'
+rpm -E '%_arch'
+rpm -q --qf '%{ARCH}' kernel-$(uname -r)
+# 1) '862.6.3.el7' 2) '371.1.2.el5' 3) n/a
+rpm -q --qf '%{RELEASE}' kernel-$(uname -r)
+# 1) '.el7' 2) '%dist' 3) '.el7'
+rpm -E '%dist'
+# 1) 'el7' 2) 'el5' 3) n/a
+rpm -q --qf '%{RELEASE}' kernel-$(uname -r) | rev | cut -d'.' -f1 | rev
+rpm -q --qf '%{RELEASE}' kernel-$(uname -r) | awk -F'.' '{print $NF}'
+rpm -q --qf '%{RELEASE}' kernel-$(uname -r) | grep -o 'el[0-9]'
+# 1) '7' 2) '5' 3) n/a
+rpm -q --qf '%{RELEASE}' kernel-$(uname -r) | rev | cut -c1 | rev
+rpm -q --qf '%{RELEASE}' kernel-$(uname -r) | tail -c1
+# 1) '7' 2) '%rhel' 3) '7'
+rpm -E '%rhel'
+# 1) '7' 2) '' 3) n/a
+rpm -q --qf '%{RELEASE}' kernel-$(uname -r) | grep -o 'el[0-9]' | tail -c1
+#------------------------------------------------------------------------------
+#-- Example:
+case $(rpm -q --qf '%{RELEASE}' kernel-$(uname -r) | grep -o 'el[0-9]') in
+    (el5)   echo EL5 ;;
+    (el6)   echo EL6 ;;
+    (el7)   echo EL7 ;;
+    (*)     echo unknown ;;
+esac
+#------------------------------------------------------------------------------
+#-- PAM-style password locks
+#------------------------------------------------------------------------------
+#-- To check:
 pam_tally2 --username=<username>
 
 #To unlock:
@@ -514,6 +565,11 @@ xrandr
 xev
 # examine the codes sent by the keyboard
 showkey
+# generate random strings (to use, for example, as service acount passwords)
+date +%s | sha256sum | base64 | head -c 32 ; echo
+openssl rand -hex 32
+openssl rand -base64 32
+< /dev/urandom tr -dc _A-Z-a-z-0-9 | head -c${1:-32};echo;
 
 ###############################################################################
 ## VMWare stuff ###############################################################
@@ -554,7 +610,7 @@ yum install hpacucli hp-smh-templates hpacucli hpdiags hponcfg hpsmh hpssacli hp
 # hpsmh               HP System Management Homepage
 # hpss                HP Smart Storage Administrator
 # hpssacli            HP Command Line Smart Storage Administrator
-# hpsum               Useful fer firmware updates 
+# hpsum               Useful fer firmware updates
 # hpvca               HP Version Control Agent
 #
 ## Drivers
@@ -572,7 +628,7 @@ yum install hpacucli hp-smh-templates hpacucli hpdiags hponcfg hpsmh hpssacli hp
 ## USEFUL COMMANDS ############################################################
 ### General
 # apropos   search the manual page names and descriptions
-# autojump  keeps database of past directories fer easy cd into them 
+# autojump  keeps database of past directories fer easy cd into them
 # colordiff wrapper fo diff and produces the same output but with pretty syntax highlighting.
 # git-all   good enough version control
 # git-extras  additional commands fer git
