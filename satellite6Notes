@@ -4,7 +4,7 @@
 #------------------------------------------------------------------------------
 # name:    Satellite 6 Notes (satellite6Notes)
 # author:  awmyhr@gmail.com
-# revised: 20180626-133614
+# revised: 20180830-132256
 # created: 2016-12-07
 #------------------------------------------------------------------------------
 #-- NOTE: This document was compiled running Satellite 6.2.4 on RHEL 7.3
@@ -110,11 +110,15 @@ satellite-installer --scenario satellite \
 #-- Hammer cheat sheet: https://access.redhat.com/articles/2258471
 #------------------------------------------------------------------------------
 mkdir "${HOME}/.hammer" && chmod 700 "${HOME}/.hammer"
-cat >"${HOME}/.hammer/cli_config.yml" <<EOF
+#-- NOTE: Satellite 6.2 ${HOME}/.hammer/cli_config.yml
+#         Satellite 6.3 ${HOME}/.hammer/cli.modules.d/foreman.yml
+cat >"${HOME}/.hammer/cli.modules.d/foreman.yml" <<EOF
 :foreman:
   :host: 'https://${SAT6_SERVER}/'
   :username: '${SAT6_USER}'
   :password: '${SAT6_PASS}'
+  :refresh_cache: false
+  :request_timeout: 120
 EOF
 chmod 600 "${HOME}/.hammer/cli_config.yml"
 hammer defaults add --param-name organization_id --param-value 1
@@ -138,32 +142,39 @@ hammer settings set --name default_download_policy --value on_demand
 #-- Enabling repos via command line
 #   All static ID numbers here are as of 2016-11-23 and could change
 #------------------------------------------------------------------------------
-#-- Get product ID
-hammer product list | grep "Red Hat Enterprise Linux Server"
+#-- List avaialbe products
+hammer product list
+#-- List currently enabled repositories
+hammer repository list --product "${PRODUCT_NAME}"
 #-- List primary repositories (to get main repo ID)
-hammer repository-set list --product-id "${PRODUCT_ID}"
+hammer repository-set list --product "${PRODUCT_NAME}"
 #-- Get list of child repositories
-hammer repository-set available-repositories --id "${REPO_ID}" --product-id "${PRODUCT_ID}"
+hammer repository-set available-repositories --id "${REPO_ID}" --product "${PRODUCT_NAME}"
 #-- Generic enable command
 hammer repository-set enable --id "${REPO_ID}" --product-id "${PRODUCT_ID}" --basearch x86_64
-#-- Specific enable commands for RHEL 6 Server (latest) x86_64
-#   in order: Kickstart, ISO ,Base , Optional, Supplementary, Extra, Sat Tools 6.2
-hammer repository-set enable --id  164 --product-id 9 --releasever 6Server --basearch x86_64
-hammer repository-set enable --id  168 --product-id 9 --releasever 6Server --basearch x86_64
-hammer repository-set enable --id  166 --product-id 9 --releasever 6Server --basearch x86_64
-hammer repository-set enable --id 1673 --product-id 9 --releasever 6Server --basearch x86_64
-hammer repository-set enable --id 3026 --product-id 9 --basearch x86_64
-hammer repository-set enable --id 4792 --product-id 9 --basearch x86_64
-#-- Specific enable commands for RHEL 7 Server (latest) x86_64
-#   in order: ISO, Kickstart ,Base , Optional, Supplementary, Extra, Sat Tools 6.2
-hammer repository-set enable --id 2454 --product-id 9 --releasever 7Server --basearch x86_64
-hammer repository-set enable --id 2456 --product-id 9 --releasever 7Server --basearch x86_64
-hammer repository-set enable --id 2463 --product-id 9 --releasever 7Server --basearch x86_64
-hammer repository-set enable --id 2476 --product-id 9 --releasever 7Server --basearch x86_64
-hammer repository-set enable --id 3030 --product-id 9 --basearch x86_64
-hammer repository-set enable --id 4831 --product-id 9 --basearch x86_64
-#-- Specific enable commands for RH Satellite 6.2 for RHEL7
-hammer repository-set enable --id 4743 --product-id 10 --basearch x86_64
+#-- This defines an array of common products, then enables them. The basearch
+#   and relver are deliminated by a colon. Note we must identify when there
+#   is no release version and run a different command.
+PRODUCT_NAME='Red Hat Enterprise Linux Server'
+declare -a PRODUCT_REPOS=( \
+    'Red Hat Enterprise Linux 7 Server - Extras (RPMs):x86_64:' \
+    'Red Hat Enterprise Linux 7 Server (ISOs):x86_64:7Server' \
+    'Red Hat Enterprise Linux 7 Server (Kickstart):x86_64:7.4' \
+    'Red Hat Enterprise Linux 7 Server - Optional (RPMs):x86_64:7Server' \
+    'Red Hat Enterprise Linux 7 Server (RPMs):x86_64:7Server' \
+    'Red Hat Enterprise Linux 7 Server - Supplementary (RPMs):x86_64:7Server' \
+    'Red Hat Satellite Tools 6.3 (for RHEL 7 Server) (RPMs):x86_64:' \
+    'Red Hat Satellite Tools 6.3 - Puppet 4 (for RHEL 7 Server) (RPMs):x86_64:' \
+)
+ENTRY=0 ; while [[ "${PRODUCT_REPOS[ENTRY]}z" != 'z' ]] ; do
+    IFS=: read -r NAME ARCH REL <<< "${PRODUCT_REPOS[ENTRY]}"
+    if [[ "${REL}z" = 'z' ]] ; then
+        echo hammer repository-set enable --product \'"${PRODUCT_NAME}"\' --name \'"${NAME}"\' --basearch \'"${ARCH}"\'
+    else
+        echo hammer repository-set enable --product \'"${PRODUCT_NAME}"\' --name \'"${NAME}"\' --basearch \'"${ARCH}"\' --releasever \'"${REL}"\'
+    fi
+    ENTRY=$(( ENTRY + 1 ))
+done
 #------------------------------------------------------------------------------
 #-- Migrating a client from Sat5 to Sat6
 #-- REF: https://access.redhat.com/solutions/1233443
