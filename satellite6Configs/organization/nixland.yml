@@ -1,0 +1,11 @@
+# =============================================================================
+# Synopsis: Satellite organization definition
+# Author:   awmyhr <awmyhr@gmail.com>
+# Revised:  2018-08-30
+# Created:  2018-08-30
+# =============================================================================
+---
+name: 'Nixland'
+label: 'nixland'
+description: 'The place for all things *NIX.'
+

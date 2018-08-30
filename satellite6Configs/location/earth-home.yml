@@ -1,0 +1,11 @@
+# =============================================================================
+# Synopsis: Satellite location definition
+# Author:   awmyhr <awmyhr@gmail.com>
+# Revised:  2018-08-30
+# Created:  2018-08-30
+# =============================================================================
+---
+name: 'Home'
+organization: 'Nixland'
+parent: 'Earth'
+description: 'The place *NIX things live.'

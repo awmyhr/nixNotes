@@ -1,0 +1,12 @@
+# =============================================================================
+# Synopsis: Satellite daily sync-plan definition
+# Author:   awmyhr <awmyhr@gmail.com>
+# Revised:  2018-08-29
+# Created:  2018-08-29
+# =============================================================================
+---
+name: 'Daily'
+interval: 'daily'
+sync-date: '2018-09-02 01:30'
+enabled: true
+description: 'Update repo data every day at 0130.'
