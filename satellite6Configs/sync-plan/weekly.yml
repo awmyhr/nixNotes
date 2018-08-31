@@ -1,10 +1,10 @@
 # =============================================================================
-# Synopsis: Satellite weekly sync-plan definition
 # Author:   awmyhr <awmyhr@gmail..com>
 # Revised:  2018-08-29
 # Created:  2018-08-29
 # =============================================================================
 ---
+type: 'sync-plan'
 name: 'Weekly'
 interval: 'weekly'
 sync-date: '2018-09-02 00:30'

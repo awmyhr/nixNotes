@@ -1,13 +1,21 @@
 # =============================================================================
-# Synopsis: Satellite Red Hat repositories to enable
 # Author:   awmyhr <awmyhr@gmail.com>
 # Revised:  2018-08-30
 # Created:  2018-08-30
 # =============================================================================
 ---
+type: 'product'
 name: 'Red Hat Enterprise Linux Server'
+description: null
+sync-plan: 'Daily'
+rhsm: true
+label: null
+gpg:
+  name: null
+  url: null
+  file: null
 repos:
-  # -- RHEL 7 Basics
+  # -- RHEL 7 Basic repos to enable
   - name: 'Red Hat Enterprise Linux 7 Server - Extras RPMs x86_64'
     repo-set-name: 'Red Hat Enterprise Linux 7 Server - Extras (RPMs)'
     repo-set-arch: 'x86_64'
@@ -32,7 +40,7 @@ repos:
     repo-set-name: 'Red Hat Enterprise Linux 7 Server - Supplementary (RPMs)'
     repo-set-arch: 'x86_64'
     repo-set-relv: '7Server'
-  # -- RHEL Satellite Tools
+  # -- RHEL Satellite Tools repos to enable
   - name: 'Red Hat Satellite Maintenance 6 for RHEL 7 Server RPMs x86_64'
     repo-set-name: 'Red Hat Satellite Maintenance 6 (for RHEL 7 Server) (RPMs)'
     repo-set-arch: 'x86_64'

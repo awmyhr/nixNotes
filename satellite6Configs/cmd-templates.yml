@@ -1,0 +1,15 @@
+# =============================================================================
+# Synopsis: Hammer command Python string template bits
+# Author:   awmyhr <awmyhr@gmail.com>
+# Revised:  2018-08-31
+# Created:  2018-08-31
+# =============================================================================
+---
+type: 'string-template'
+command: 'hammer'
+default:
+  list: 'list'
+  info: 'info --name ${name}'
+  create: 'create --name ${name} --label ${label} --description ${description}'
+  update: 'update --name ${name} --label ${label} --description ${description}'
+  delete: 'delete --name ${name} --label ${label}'

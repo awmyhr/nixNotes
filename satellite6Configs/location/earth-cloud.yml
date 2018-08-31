@@ -1,10 +1,10 @@
 # =============================================================================
-# Synopsis: Satellite location definition
 # Author:   awmyhr <awmyhr@gmail.com>
 # Revised:  2018-08-30
 # Created:  2018-08-30
 # =============================================================================
 ---
+type: 'location'
 name: 'Cloud'
 organization: 'Nixland'
 parent: 'Earth'

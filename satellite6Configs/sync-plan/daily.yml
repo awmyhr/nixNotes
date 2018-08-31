@@ -1,10 +1,10 @@
 # =============================================================================
-# Synopsis: Satellite daily sync-plan definition
 # Author:   awmyhr <awmyhr@gmail.com>
 # Revised:  2018-08-29
 # Created:  2018-08-29
 # =============================================================================
 ---
+type: 'sync-plan'
 name: 'Daily'
 interval: 'daily'
 sync-date: '2018-09-02 01:30'
