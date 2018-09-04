@@ -1,6 +1,6 @@
 # =============================================================================
 # Author:   awmyhr <awmyhr@gmail.com>
-# Revised:  2018-08-31
+# Revised:  20180904-145957
 # Created:  2018-08-31
 # =============================================================================
 ---
@@ -23,6 +23,15 @@ repos:
     checksum-type: 'sha256'
     download-policy: 'on_demand'
     url: 'https://packages.microsoft.com/rhel/7/prod/'
+    gpg:
+      name: 'microsoft_product_gpg'
+      url: 'https://packages.microsoft.com/keys/microsoft.asc'
+  - name: 'Microsoft Packages for Linux 7 Server RPMs x86_64 7.4'
+    label: '7_4_rpms'
+    content-type: 'yum'
+    checksum-type: 'sha256'
+    download-policy: 'on_demand'
+    url: 'https://packages.microsoft.com/rhel/7.4/prod/'
     gpg:
       name: 'microsoft_product_gpg'
       url: 'https://packages.microsoft.com/keys/microsoft.asc'
