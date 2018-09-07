@@ -4,7 +4,7 @@
 #------------------------------------------------------------------------------
 # name:    Ansible Notes (ansibleNotes)
 # author:  awmyhr@gmail.com
-# revised: 20180824-101606
+# revised: 20180907-151338
 # created: 2016-??-??
 #------------------------------------------------------------------------------
 #-- Configuration Locations - first found
@@ -96,7 +96,7 @@ git clone https://github.com/ansible/awx.git "${AWXDIR}"
 #     && git fetch --all --tags --prune \
 #     && git checkout tags/"${AWXREL}" \
 #     && cd - || return
-cp "${AWXDIR}"/installer/inventory awx-hosts || :
+cp "${AWXDIR}"/installer/inventory awx-hosts
 
 #-- Create user for the awx project, this is for htpasswd backed authentication:
 htpasswd -b /etc/origin/master/htpasswd "${AWXUSER}" "${AWXPASS}"
