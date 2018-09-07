@@ -27,6 +27,12 @@
         size: "5G"
         type: "xfs"
         vg: "vg01"
+      - label: "var.lib.etcd"
+        path: "/var/lib/etcd"
+        options: "defaults,relatime"
+        size: "5G"
+        type: "xfs"
+        vg: "vg01"
   tasks:
     # - Disk Management
     - name: Common LVs
