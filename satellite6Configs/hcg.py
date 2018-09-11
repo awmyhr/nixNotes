@@ -45,6 +45,7 @@ import os           #: Misc. OS interfaces
 import sys          #: System-specific parameters & functions
 # import traceback    #: Print/retrieve a stack traceback
 import yaml
+from string import Template
 #==============================================================================
 #-- Third Party Imports
 #==============================================================================
@@ -65,7 +66,7 @@ if sys.version_info <= (2, 6):
 #-- Variables which are meta for the script should be dunders (__varname__)
 #-- TODO: Update meta vars
 __version__ = '0.1.0-alpha' #: current version
-__revised__ = '20180911-122410' #: date of most recent revision
+__revised__ = '20180911-161537' #: date of most recent revision
 __contact__ = 'awmyhr <awmyhr@gmail.com>' #: primary contact for support/?'s
 __synopsis__ = 'Generates hammer commands from yaml-formatted files.'
 __description__ = '''TODO: CHANGEME
@@ -595,13 +596,34 @@ class RunOptions(object):
 
 
 #==============================================================================
+def parse_yaml(filename):
+    ''' Load yaml file and return dict. Though very basic, I pull this out
+        in the case that we want to take a different approach in the future.
+
+    Args:
+        filename (string): File to open.
+
+    Returns:
+        Dictionary of contents.
+
+    '''
+
+    return yaml.safe_load(open(filename).read())
+
+
+#==============================================================================
 def main():
     ''' This is where the action takes place
         We expect options and logger to be global
     '''
     logger.debug('Starting main()')
     #-- TODO: Do something more interesting here...
-
+    cmdt = parse_yaml('cmd-templates.yml')
+    output = Template(cmdt['actions']['create'])
+    print(cmdt['command'] + ' [subcommand] ' +
+          output.substitute(name='New Name', label='new', description='this is the description'))
+    for filename in os.listdir('location/earth.yml'):
+        print(filename)
 
 #==============================================================================
 if __name__ == '__main__':
