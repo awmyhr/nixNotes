@@ -66,7 +66,7 @@ if sys.version_info <= (2, 6):
 #-- Variables which are meta for the script should be dunders (__varname__)
 #-- TODO: Update meta vars
 __version__ = '0.1.0-alpha' #: current version
-__revised__ = '20180911-161537' #: date of most recent revision
+__revised__ = '20180911-180437' #: date of most recent revision
 __contact__ = 'awmyhr <awmyhr@gmail.com>' #: primary contact for support/?'s
 __synopsis__ = 'Generates hammer commands from yaml-formatted files.'
 __description__ = '''TODO: CHANGEME
@@ -607,8 +607,30 @@ def parse_yaml(filename):
         Dictionary of contents.
 
     '''
+    logger.debug('Entering Function: %s', sys._getframe().f_code.co_name) #: pylint: disable=protected-access
 
     return yaml.safe_load(open(filename).read())
+
+
+#==============================================================================
+def make_str_tpl(strings, subcommand, action):
+    ''' working '''
+    logger.debug('Entering Function: %s', sys._getframe().f_code.co_name) #: pylint: disable=protected-access
+
+    if subcommand in strings['subcommand']:
+        if action in strings['subcommand'][subcommand]:
+            str_tpl = Template('%s %s %s' % (strings['command'], subcommand,
+                                             strings['subcommand'][subcommand][action]))
+        elif action in strings['subcommand']['_default']:
+            str_tpl = Template('%s %s %s' % (strings['command'], subcommand,
+                                             strings['subcommand']['_default'][action]))
+        else:
+            #: Action not found.
+            str_tpl = None
+    else:
+        #: Subcommand not found.
+        str_tpl = None
+    return str_tpl
 
 
 #==============================================================================
@@ -617,13 +639,18 @@ def main():
         We expect options and logger to be global
     '''
     logger.debug('Starting main()')
-    #-- TODO: Do something more interesting here...
-    cmdt = parse_yaml('cmd-templates.yml')
-    output = Template(cmdt['actions']['create'])
-    print(cmdt['command'] + ' [subcommand] ' +
-          output.substitute(name='New Name', label='new', description='this is the description'))
-    for filename in os.listdir('location/earth.yml'):
-        print(filename)
+
+    cmd_strs = parse_yaml('hammer-command-templates.yml')
+
+    for filename in os.listdir('location'):
+        content = parse_yaml('location/%s' % filename)
+        info = make_str_tpl(cmd_strs, content['type'], 'create')
+        logger.debug('Returned: %s', info)
+        print(info.substitute(content))
+        # print(info.substitute(name=content['name'], label=content['label']))
+        # print(info.substitute(name=content['name'], label=content['label'],
+        #                       description=content['description']))
+
 
 #==============================================================================
 if __name__ == '__main__':
