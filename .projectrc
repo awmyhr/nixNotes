@@ -1,0 +1,14 @@
+{
+  projectrc_version: '1.0.0',
+  contact_email: 'awmyhr@gmail.com',
+  contact_name: 'awmyhr',
+  email: 'awmyhr@gmail.com',
+  full_name: 'awmyhr',
+  project_home: 'https://github.com/awmyhr/nixNotes',
+  project_name: 'Notes from *NIXLand',
+  project_slug: 'nixNotes',
+  project_abbr: 'nixNotes',
+  project_version: '2017.05.12',
+  software_copyright: '2017 awmyhr',
+  software_license: 'Apache-2.0'
+}
