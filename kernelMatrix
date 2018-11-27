@@ -1,6 +1,6 @@
 #==============================================================================
 # Author:   awmyhr <awmyhr@gmail.com>
-# Revised:  20180925-164752
+# Revised:  20181127-152259
 # Created:  2017-06-23
 #==============================================================================
 #-- Red Hat Linux
@@ -87,7 +87,7 @@ RHEL el7 7.2   3.10.0-327 2015-11-19 2017-11-30 Maipo     Fedora_19
 RHEL el7 7.3   3.10.0-514 2016-11-03 2018-11-30 Maipo     Fedora_19
 RHEL el7 7.4   3.10.0-693 2017-08-01 2019-08-30 Maipo     Fedora_19
 RHEL el7 7.5   3.10.0-862 2018-04-10 2020-04-30 Maipo     Fedora_19
-RHEL el7 7.6   3.10.0-933 --- --- Maipo     Fedora_19
+RHEL el7 7.6   3.10.0-933 2018-10-30 2020-10-30 Maipo     Fedora_19
 
 #-- Fedora
 #: Distro Flavour Version Kernel Release EOL CodeName Pedigree
