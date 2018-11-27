@@ -4,7 +4,7 @@
 #------------------------------------------------------------------------------
 # name:    Misc. Notes (miscNotes)
 # author:  awmyhr@gmail.com
-# revised: 20180823-114042
+# revised: 20181127-161731
 # created: 2018-06-26
 #------------------------------------------------------------------------------
 #-- XDG Base Directory Specification
@@ -300,7 +300,7 @@ Note: Most [Server] systems also have [Desktop] modes
 #------------------------------------------------------------------------------
 Distro    Docker
 Alpine    alpine
-Arch      base/archlinux
+Arch      archlinux/base
 Debian    debian
 Ubuntu    ubuntu
 Fedora    fedora
