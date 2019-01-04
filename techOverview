@@ -1,0 +1,31 @@
+#------------------------------------------------------------------------------
+#-- Foundational technologies
+#------------------------------------------------------------------------------
+#-- Programming/scripting
+Go
+Python
+Rust
+Shell (Bash/fish/POSIX/ZSH)
+Swift
+
+#------------------------------------------------------------------------------
+#-- Config/data files
+INI-config
+JSON
+yaml
+
+#------------------------------------------------------------------------------
+#-- Document markup
+Markdown
+ReStructured Text
+
+#------------------------------------------------------------------------------
+#-- Applications
+Ansible
+CRI-O/podman (container tech)
+git
+OKD    (upstream OpenShift)
+Packer (automated image builder)
+Sphinx (document generation)
+
+#------------------------------------------------------------------------------
