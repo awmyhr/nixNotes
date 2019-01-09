@@ -14,7 +14,7 @@ sshfs <remoteserver>:<path/to/remotedirectory> <mountpoint>
 # Unmount the above:
 fusermount -u <mountpoint>
 # If rsync/scp not available, use tar and ssh with pipes
-#   copy to remoteserver 
+#   copy to remoteserver
 tar -cpf - <directory/filelist> | ssh <remoteserver> "cd <targetpath> && tar -xvpf -"
 #   (some versions of tar have a -C option)
 tar -cpf - <directory/filelist> | ssh <remoteserver> tar -C <targetpath> -xpf -
@@ -47,7 +47,7 @@ openssl req -x509 -newkey rs:1024 -keyout my.key -out my.crt -days 2365 -nodes
 # Read a sefl-signed cert:
 openssl x509 -in bogus.pem -inform pem -noout -text
 
-# get fingerprint of a public key file 
+# get fingerprint of a public key file
 ssh-keygen -lf <filename>
 
 # get server cert thumbprint
@@ -57,6 +57,9 @@ openssl x509 -in /tmp/cert -fingerprint -sha1 -noout
 # get key fingerprint
 gpg --with-fingerprint keyname
 
+# generate random strings (to use, for example, as service acount passwords)
+openssl rand -hex 32
+openssl rand -base64 32
 
 ################################################################################
 ## RegEx to match common RPM name/version strings:
