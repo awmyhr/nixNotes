@@ -4,7 +4,7 @@
 #------------------------------------------------------------------------------
 # name:    Misc. Notes (miscNotes)
 # author:  awmyhr@gmail.com
-# revised: 20181127-161731
+# revised: 20190725-115234
 # created: 2018-06-26
 #------------------------------------------------------------------------------
 #-- XDG Base Directory Specification
@@ -283,6 +283,8 @@ PCLinuxOS [Desktop] (---/Mandriva) #
 ReactOS [Desktop] (---) # (1)
 Slackware [Server] (---) ^
 Solaris [Server] (---) (2)
+    OmniOS [Server] (Solaris)
+    OpenIndiana [Desktop] (Solaris)
     SmartOS [Server] (Solaris) ^
 Solus [Desktop] (---) *
 
