@@ -4,7 +4,8 @@
 #
 # ISO date stamp
 `date +%Y%m%d-%H%M`
-
+# PID, epoch, nanosec timestamp. example: 8315.1564599180.418350445
+printf '%s.%s\n' "${$}" "$(date +%s.%N)"
 ################################################################################
 # Edit remotefile on remoteserver (relative to login user homedir)
 #   <remoteserver> can be in user@hostname style
